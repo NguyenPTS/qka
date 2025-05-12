@@ -1,36 +1,136 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Question Search Application
 
-## Getting Started
+Ứng dụng tìm kiếm câu hỏi và trả lời dựa trên từ khóa, sử dụng Next.js và MongoDB.
 
-First, run the development server:
+## Tính năng
 
+- Tìm kiếm thông minh với nhiều từ khóa
+- Hỗ trợ tìm kiếm cụm từ (ví dụ: "tai biến")
+- Cho phép chọn nhiều từ khóa cùng lúc
+- Hiển thị câu hỏi và câu trả lời liên quan
+- Giao diện người dùng thân thiện
+
+## Yêu cầu hệ thống
+
+- Node.js 18.x trở lên
+- MongoDB 4.x trở lên
+- NPM hoặc Yarn
+
+## Cài đặt
+
+1. Clone repository:
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone <repository-url>
+cd qka
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2. Cài đặt dependencies:
+```bash
+npm install
+# hoặc
+yarn install
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+3. Tạo file `.env.local` và cấu hình MongoDB:
+```env
+MONGODB_URI=mongodb://username:password@localhost:27017/pharmatech?authSource=admin
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+4. Khởi chạy ứng dụng:
+```bash
+npm run dev
+# hoặc
+yarn dev
+```
 
-## Learn More
+5. Truy cập ứng dụng tại: http://localhost:3000
 
-To learn more about Next.js, take a look at the following resources:
+## Cấu trúc dữ liệu
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Collection: questionkeywordanswer
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```typescript
+interface Question {
+  _id: string;
+  question: string;
+  keyword: string[];
+  answer: string;
+}
+```
 
-## Deploy on Vercel
+## API Endpoints
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### GET /api/questions/keyword
+- Tìm kiếm từ khóa dựa trên câu hỏi
+- Query params: `question` (string)
+- Response: Mảng các từ khóa liên quan
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### GET /api/questions/search
+- Tìm kiếm câu hỏi dựa trên từ khóa
+- Query params: `keywords` (string, các từ khóa phân cách bằng dấu phẩy)
+- Response: Mảng các câu hỏi và câu trả lời
+
+## Hướng dẫn sử dụng
+
+1. Nhập câu hỏi vào ô tìm kiếm
+2. Hệ thống sẽ hiển thị các từ khóa liên quan
+3. Chọn một hoặc nhiều từ khóa để xem câu hỏi và câu trả lời
+4. Có thể bấm vào từ khóa một lần nữa để bỏ chọn
+5. Sử dụng nút "Clear" để xóa kết quả tìm kiếm
+
+## Tính năng tìm kiếm
+
+- Tìm kiếm theo từ đơn (độ dài > 2 ký tự)
+- Tìm kiếm theo cụm từ (2-3 từ liên tiếp)
+- Sắp xếp kết quả theo độ liên quan
+- Giới hạn 10 từ khóa phổ biến nhất
+
+## Xử lý lỗi
+
+- Hiển thị thông báo khi không tìm thấy từ khóa
+- Hiển thị thông báo khi không tìm thấy câu hỏi
+- Log chi tiết lỗi trong console cho việc debug
+
+## Phát triển
+
+### Cấu trúc thư mục
+
+```
+qka/
+├── app/
+│   ├── api/
+│   │   ├── questions/
+│   │   │   ├── keyword/
+│   │   │   │   └── route.ts
+│   │   │   └── search/
+│   │   │       └── route.ts
+│   │   │
+│   │   ├── page.tsx
+│   │   └── components/
+│   │       └── QuestionSearch.tsx
+│   ├── lib/
+│   │   └── mongodb.ts
+│   ├── models/
+│   │   └── Question.ts
+│   ├── .env.local
+│   └── package.json
+```
+
+### Công nghệ sử dụng
+
+- Next.js 13 (App Router)
+- MongoDB với Mongoose
+- Material-UI (MUI)
+- TypeScript
+
+## Contributing
+
+1. Fork repository
+2. Tạo branch mới
+3. Commit changes
+4. Push to branch
+5. Tạo Pull Request
+
+## License
+
+MIT License 
