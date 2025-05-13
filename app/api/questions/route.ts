@@ -14,9 +14,9 @@ export async function POST(request: Request) {
     }
     let keywordArr: string[] = [];
     if (Array.isArray(body.keyword)) {
-      keywordArr = body.keyword.map((k) => String(k).trim()).filter(Boolean);
+      keywordArr = body.keyword.map((k: string) => String(k).trim()).filter(Boolean);
     } else if (typeof body.keyword === 'string') {
-      keywordArr = body.keyword.split(',').map((k) => k.trim()).filter(Boolean);
+      keywordArr = body.keyword.split(',').map((k: string) => k.trim()).filter(Boolean);
     }
     if (!keywordArr.length) {
       return NextResponse.json({ error: 'Trường keyword là bắt buộc và phải có ít nhất 1 từ khoá.' }, { status: 400 });

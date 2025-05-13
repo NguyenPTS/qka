@@ -14,7 +14,7 @@ services:
       - '7000:3000'
     networks:
       - traefik
-      - default
+  
     labels:
       - 'traefik.enable=true'
       - 'traefik.docker.network=traefik'
