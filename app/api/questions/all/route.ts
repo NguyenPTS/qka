@@ -4,16 +4,20 @@ import Question from '@/models/Question';
 
 export async function GET(request: NextRequest) {
   try {
+    console.log('[API] GET /api/questions/all - Nhận request');
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page') || '1', 10);
     const pageSize = parseInt(searchParams.get('pageSize') || '10', 10);
     const skip = (page - 1) * pageSize;
     await connectDB();
+    console.log('[API] Đã kết nối DB');
     const total = await Question.countDocuments();
+    console.log(`[API] Tổng số câu hỏi: ${total}`);
     const questions = await Question.find({})
       .skip(skip)
       .limit(pageSize)
       .lean();
+    console.log(`[API] Trả về ${questions.length} câu hỏi`);
     return NextResponse.json({ data: questions, total });
   } catch (error: any) {
     console.error('[API] Lỗi khi fetch all questions:', error);
