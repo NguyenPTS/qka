@@ -314,7 +314,7 @@ export default function Home() {
             align="center"
             sx={{ fontSize: "1.5rem" }}
           >
-            Question Search
+            Tìm kiếm câu hỏi
           </Typography>
           <Paper sx={{ p: 3, mb: 3 }}>
             <TextField
@@ -480,57 +480,55 @@ export default function Home() {
                 name="question"
                 value={form.question}
                 onChange={handleCrudChange}
-               
-                InputProps={{ className: 'rounded-lg bg-white' }}
+                InputProps={{ className: 'rounded-lg bg-white', sx: { paddingLeft: 2 } }}
                 className="shadow-sm"
                 sx={{
                   width: "100%",
                   '& .MuiInputBase-root': {
                     fontSize: '0.95rem',
                     margin: '0 10px',
-                    
                     borderRadius: '8px',
                     minHeight: '36px',
-                  },'& .MuiOutlinedInput-notchedOutline': {
-      borderColor: '#b6c2d9',
-    },
-    '&:hover .MuiOutlinedInput-notchedOutline': {
-      
-      fontSize: '0.95rem',
-    },
-    '& .MuiInputLabel-root': {
-      fontWeight: 600,
-      fontSize: '0.80rem',
-    }
+                  },
+                  '& .MuiOutlinedInput-notchedOutline': {
+                    borderColor: '#b6c2d9',
+                  },
+                  '&:hover .MuiOutlinedInput-notchedOutline': {
+                    fontSize: '0.95rem',
+                  },
+                  '& .MuiInputLabel-root': {
+                    paddingLeft: '20px',
+                    fontWeight: 600,
+                    fontSize: '0.80rem',
+                  }
                 }}
               />
               <TextField
                 label="Keyword (cách nhau bởi dấu phẩy)"
                 name="keyword"
-                
                 value={form.keyword}
                 onChange={handleCrudChange}
-                InputProps={{ className: 'rounded-lg bg-white' }}
+                // InputProps={{ className: 'rounded-lg bg-white', sx: { paddingLeft: 2 } }}
                 className="shadow-sm"
                 sx={{
                   width: "100%",
                   '& .MuiInputBase-root': {
                     fontSize: '0.95rem',
                     margin: '0 10px',
-                    
                     borderRadius: '8px',
                     minHeight: '36px',
-                  },'& .MuiOutlinedInput-notchedOutline': {
-      borderColor: '#b6c2d9',
-    },
-    '&:hover .MuiOutlinedInput-notchedOutline': {
-      
-      fontSize: '0.95rem',
-    },
-    '& .MuiInputLabel-root': {
-      fontWeight: 600,
-      fontSize: '0.80rem',
-    }
+                  },
+                  '& .MuiOutlinedInput-notchedOutline': {
+                    borderColor: '#b6c2d9',
+                  },
+                  '&:hover .MuiOutlinedInput-notchedOutline': {
+                    fontSize: '0.95rem',
+                  },
+                  '& .MuiInputLabel-root': {
+                    paddingLeft: '20px',
+                    fontWeight: 600,
+                    fontSize: '0.80rem',
+                  }
                 }}
               />
               <TextField
@@ -541,7 +539,7 @@ export default function Home() {
                 required
                 multiline
                 minRows={2}
-                InputProps={{ className: 'rounded-lg bg-white' }}
+                InputProps={{ className: 'rounded-lg bg-white', sx: { paddingLeft: 2 } }}
                 className="shadow-sm"
                 sx={{
                   width: "100%",
@@ -551,17 +549,18 @@ export default function Home() {
                     
                     borderRadius: '8px',
                     minHeight: '36px',
-                  },'& .MuiOutlinedInput-notchedOutline': {
-      borderColor: '#b6c2d9',
-    },
-    '&:hover .MuiOutlinedInput-notchedOutline': {
-      
-      fontSize: '0.95rem',
-    },
-    '& .MuiInputLabel-root': {
-      fontWeight: 600,
-      fontSize: '0.80rem',
-    }
+                  },
+                  '& .MuiOutlinedInput-notchedOutline': {
+                    borderColor: '#b6c2d9',
+                  },
+                  '&:hover .MuiOutlinedInput-notchedOutline': {
+                    fontSize: 'rem',
+                  },
+                  '& .MuiInputLabel-root': {
+                    paddingLeft: '20px',
+                    fontWeight: 600,
+                    fontSize: '0.80rem',
+                  }
                 }}
               />
               <Stack
@@ -658,7 +657,7 @@ export default function Home() {
                   value={form.question}
                   onChange={handleCrudChange}
                   fullWidth
-                  InputProps={{ className: 'rounded-lg bg-white' }}
+                  // InputProps={{ className: 'rounded-lg bg-white' }}
                 />
                 <TextField
                   label="Keyword (cách nhau bởi dấu phẩy)"
@@ -666,7 +665,7 @@ export default function Home() {
                   value={form.keyword}
                   onChange={handleCrudChange}
                   fullWidth
-                  InputProps={{ className: 'rounded-lg bg-white' }}
+                  // InputProps={{ className: 'rounded-lg bg-white' }}
                 />
                 <TextField
                   label="Answer"
@@ -676,7 +675,7 @@ export default function Home() {
                   fullWidth
                   multiline
                   minRows={2}
-                  InputProps={{ className: 'rounded-lg bg-white' }}
+                  // InputProps={{ className: 'rounded-lg bg-white' }}
                 />
               </Stack>
             </DialogContent>
