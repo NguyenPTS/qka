@@ -1,17 +1,5 @@
 import mongoose from 'mongoose';
 
-const MONGODB_URI = process.env.MONGODB_URI!;
-
-if (MONGODB_URI) {
-  console.log('MongoDB URI:', MONGODB_URI.replace(/:([^:@]+)@/, ':****@'));
-} else {
-  console.error('MONGODB_URI is not defined!');
-}
-
-if (!MONGODB_URI) {
-  throw new Error('Please define the MONGODB_URI environment variable inside .env.local');
-}
-
 let cached = global.mongoose;
 
 if (!cached) {
@@ -19,6 +7,13 @@ if (!cached) {
 }
 
 async function connectDB() {
+  const MONGODB_URI = process.env.MONGODB_URI;
+  if (!MONGODB_URI) {
+    console.error('MONGODB_URI is not defined!');
+    throw new Error('Please define the MONGODB_URI environment variable inside .env.local');
+  }
+  console.log('MongoDB URI:', MONGODB_URI.replace(/:([^:@]+)@/, ':****@'));
+
   try {
     console.log('Attempting to connect to MongoDB...');
     
