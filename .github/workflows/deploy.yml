@@ -2,7 +2,7 @@ name: Main workflow
 on:
   push:
     branches:
-      - main
+      - master
 env:
   WORKSPACE: /home
   PROJECT_NAME: ${{ github.event.repository.name }}
@@ -15,12 +15,12 @@ jobs:
       - name: If Not Found Clone
         run: |
           if [ ! -d "$WORKSPACE/$PROJECT_NAME" ]; then
-            git clone https://${{ secrets.GH_TOKEN }}@github.com/pharmatechweb3/$PROJECT_NAME.git $WORKSPACE/$PROJECT_NAME
+            git clone https://${{ secrets.GH_TOKEN }}@github.com/NguyenPTS/$PROJECT_NAME.git $WORKSPACE/$PROJECT_NAME
           fi
         shell: /usr/bin/bash -e {0}
         env:
           WORKSPACE: /home
-          PROJECT_NAME: pharmatech-new-home
+          PROJECT_NAME: qka
       - name: Get Project Name
         id: get_project
         run: |

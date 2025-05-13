@@ -1,11 +1,28 @@
-version: '3.8'
 
 services:
   faq:
-    build: .
-    container_name: faq_app
+    restart: always
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        PROJECT_NAME: web
+        PORT_PROGRAM: 7000:3000
+    image: nest-pharmatech/faq:latest
+    container_name: nextjs-faq
     ports:
-      - "6000:3000"
-    env_file:
-      - .env
-    restart: always 
+      - '7000:3000'
+    networks:
+      - traefik
+      - default
+    labels:
+      - 'traefik.enable=true'
+      - 'traefik.docker.network=traefik'
+      - 'traefik.http.routers.faq.entrypoints=http'
+      - 'traefik.http.routers.faq.rule=Host(`faq.trungthanhdev.com`)'
+      - 'traefik.http.routers.faq-secure.entrypoints=https'
+      - 'traefik.http.routers.faq-secure.rule=Host(`pharmatech.vn`)'
+      - 'traefik.http.routers.faq-secure.tls.certresolver=letsencrypt'
+networks:
+  traefik:
+    external: true
