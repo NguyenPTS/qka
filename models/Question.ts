@@ -18,7 +18,7 @@ const QuestionSchema = new mongoose.Schema({
     default: Date.now,
   },
 }, {
-  collection: 'questionkeywordanswer'
+  collection: 'faq'
 });
 
 export default mongoose.models.Question || mongoose.model('Question', QuestionSchema); 
