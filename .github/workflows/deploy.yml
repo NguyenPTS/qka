@@ -4,8 +4,8 @@ on:
     branches:
       - master
 env:
-  WORKSPACE: /home
-  PROJECT_NAME: ${{ github.event.repository.name }}
+  WORKSPACE: /home/frontend
+  PROJECT_NAME: qka
 jobs:
   deploy:
     name: Deploy
