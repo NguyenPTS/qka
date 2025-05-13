@@ -31,7 +31,7 @@ jobs:
               echo "Deploying ${{ steps.get_project.outputs.project }}"
               cd $WORKSPACE/$PROJECT_NAME
               git config credential.helper '!f() { sleep 1; echo "username=${{ secrets.GH_USER }}"; echo "password=${{ secrets.GH_TOKEN }}"; }; f'
-              git checkout main
+              git checkout master
               git pull
               CONTAINER_EXISTS=$(docker-compose -f docker-compose.yml ps -q ${{ steps.get_project.outputs.project }})
               if [ -n "$CONTAINER_EXISTS" ]; then
