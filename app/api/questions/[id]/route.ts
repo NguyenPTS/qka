@@ -14,8 +14,8 @@ export async function GET(request: Request, context: { params: { id: string } })
   }
 }
 
-export async function PUT(request: Request, context: { params: { id: string } }) {
-  const { params } = context;
+export async function PUT(request: Request, context: { params: any }) {
+  const params = await context.params;
   try {
     const body = await request.json();
     await connectDB();
