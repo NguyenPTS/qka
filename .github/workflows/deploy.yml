@@ -17,15 +17,6 @@ jobs:
           echo "WORKSPACE=$WORKSPACE"
           echo "PROJECT_NAME=$PROJECT_NAME"
           echo "PWD=$(pwd)"
-      - name: If Not Found Clone
-        run: |
-          if [ ! -d "$WORKSPACE/$PROJECT_NAME" ]; then
-            git clone https://${{ secrets.GH_TOKEN }}@github.com/NguyenPTS/$PROJECT_NAME.git $WORKSPACE/$PROJECT_NAME
-          fi
-        shell: /usr/bin/bash -e {0}
-        env:
-          WORKSPACE: /home/frontend
-          PROJECT_NAME: qka
       - name: Get Project Name
         id: get_project
         run: |
