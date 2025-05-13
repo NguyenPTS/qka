@@ -2,8 +2,7 @@ import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import Question from '@/models/Question';
 
-export async function GET(request: Request, context: { params: { id: string } }) {
-  const { params } = context;
+export async function GET(request: Request, { params }: { params: { id: string } }) {
   try {
     await connectDB();
     const question = await Question.findById(params.id).lean();
@@ -14,8 +13,7 @@ export async function GET(request: Request, context: { params: { id: string } })
   }
 }
 
-export async function PUT(request: Request, context: { params: any }) {
-  const params = await context.params;
+export async function PUT(request: Request, { params }: { params: { id: string } }) {
   try {
     const body = await request.json();
     await connectDB();
@@ -35,8 +33,7 @@ export async function PUT(request: Request, context: { params: any }) {
   }
 }
 
-export async function DELETE(request: Request, context: { params: any }) {
-  const params = await context.params;
+export async function DELETE(request: Request, { params }: { params: { id: string } }) {
   try {
     console.log(`[API] DELETE /api/questions/${params.id} - Bắt đầu xoá câu hỏi`);
     await connectDB();
