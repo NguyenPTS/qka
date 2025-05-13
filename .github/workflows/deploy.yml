@@ -12,6 +12,11 @@ jobs:
     runs-on: self-hosted
     #    needs: scripts.ts-docker-build
     steps:
+      - name: Debug path variables
+        run: |
+          echo "WORKSPACE=$WORKSPACE"
+          echo "PROJECT_NAME=$PROJECT_NAME"
+          echo "PWD=$(pwd)"
       - name: If Not Found Clone
         run: |
           if [ ! -d "$WORKSPACE/$PROJECT_NAME" ]; then
