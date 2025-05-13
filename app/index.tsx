@@ -126,7 +126,7 @@ export default function Home() {
       <Paper sx={{ p: 3, mb: 3 }}>
         <TextField
           fullWidth
-          label="Enter your question"
+          label="Vui lòng nhập câu hỏi"
           value={question}
           onChange={(e) => setQuestion(e.target.value)}
           onKeyPress={(e) => e.key === "Enter" && handleQuestionSubmit()}

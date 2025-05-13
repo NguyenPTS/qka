@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   TextField,
   Button,
@@ -33,6 +33,7 @@ import {
 } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
+import React from "react";
 
 interface Question {
   _id: string;
@@ -40,6 +41,97 @@ interface Question {
   keyword: string[];
   answer: string;
 }
+
+interface CrudTableProps {
+  crudQuestions: Question[];
+  handleCrudEdit: (q: Question) => void;
+  handleCrudDelete: (id: string) => void;
+}
+
+const CrudTable = React.memo(function CrudTable({ crudQuestions, handleCrudEdit, handleCrudDelete }: CrudTableProps) {
+  return (
+    <TableContainer sx={{mt: 5}}
+    component={Paper} className="mt-10 rounded-2xl shadow-xl max-w-5xl mt-1">
+      <Table size="small">
+        <TableHead>
+          <TableRow className="bg-blue-100">
+            <TableCell className="font-bold text-blue-700 text-base py-3">Question</TableCell>
+            <TableCell className="font-bold text-blue-700 text-base py-3">Keyword</TableCell>
+            <TableCell className="font-bold text-blue-700 text-base py-3">Answer</TableCell>
+            <TableCell className="font-bold text-blue-700 text-base py-3 text-center">Hành động</TableCell>
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {crudQuestions?.map((q: Question) => (
+            <TableRow key={q._id} className="hover:bg-blue-50 transition">
+              <TableCell className="align-top py-3">{q.question}</TableCell>
+              <TableCell className="align-top py-3">
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                  {(Array.isArray(q.keyword) ? q.keyword : [q.keyword]).map((kw, idx) => (
+                    <Chip
+                      key={idx}
+                      label={kw}
+                      color="primary"
+                      variant="outlined"
+                      size="small"
+                      sx={{
+                        fontWeight: 600,
+                        fontSize: '0.85rem',
+                        borderRadius: 1,
+                        borderWidth: 2,
+                        borderColor: '#1976d2',
+                        color: '#1976d2',
+                        background: '#e3f0fd'
+                      }}
+                    />
+                  ))}
+                </Box>
+              </TableCell>
+              <TableCell className="align-top py-3">
+                <Box
+                  sx={{
+                    maxHeight: 200,
+                    overflowY: "auto",
+                    background: "#f9fafb",
+                    borderRadius: 1,
+                    p: 1,
+                    fontSize: "0.95rem",
+                    whiteSpace: "pre-line"
+                  }}
+                  className="custom-scrollbar"
+                >
+                  {q.answer}
+                </Box>
+              </TableCell>
+              <TableCell className="align-top py-3 text-center">
+                <Button
+                  size="small"
+                  variant="outlined"
+                  color="warning"
+                  className="mr-2 !rounded-md !py-1 !px-3 !text-sm hover:!bg-yellow-100 hover:!border-yellow-500 transition-transform duration-100 active:scale-95"
+                  onClick={() => handleCrudEdit(q)}
+                  startIcon={<EditIcon />}
+                >
+                  Sửa
+                </Button>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  color="error"
+                  className="!rounded-md !py-1 !px-3 !text-sm hover:!bg-red-100 hover:!border-red-500 transition-transform duration-100 active:scale-95"
+                  onClick={() => handleCrudDelete(q._id)}
+                  startIcon={<DeleteIcon />}
+                >
+                  Xoá
+                </Button>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </TableContainer>
+  );
+});
 
 export default function Home() {
   const [tab, setTab] = useState(0);
@@ -140,8 +232,8 @@ export default function Home() {
     if (tab === 1) fetchCrudQuestions(crudPage);
   }, [tab, crudPage]);
 
-  const handleCrudChange = (e: React.ChangeEvent<HTMLInputElement>) => setForm({ ...form, [e.target.name]: e.target.value });
-  const handleCrudTextAreaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => setForm({ ...form, [e.target.name]: e.target.value });
+  const handleCrudChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => setForm(f => ({ ...f, [e.target.name]: e.target.value })), []);
+  const handleCrudTextAreaChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => setForm(f => ({ ...f, [e.target.name]: e.target.value })), []);
 
   const handleCrudSubmit = async () => {
     if (editingId) {
@@ -170,7 +262,7 @@ export default function Home() {
     fetchCrudQuestions(crudPage);
   };
 
-  const handleCrudEdit = (q: Question) => {
+  const handleCrudEdit = useCallback((q: Question) => {
     setForm({
       question: q.question,
       keyword: Array.isArray(q.keyword) ? q.keyword.join(", ") : q.keyword,
@@ -178,7 +270,7 @@ export default function Home() {
     });
     setEditingId(q._id);
     setEditOpen(true);
-  };
+  }, []);
 
   const handleEditClose = () => {
     setEditOpen(false);
@@ -186,12 +278,12 @@ export default function Home() {
     setForm({ question: "", keyword: "", answer: "" });
   };
 
-  const handleCrudDelete = async (id: string) => {
+  const handleCrudDelete = useCallback((id: string) => {
     setDeleteId(id);
     setDeleteOpen(true);
-  };
+  }, []);
 
-  const confirmDelete = async () => {
+  const confirmDelete = useCallback(async () => {
     if (deleteId) {
       await fetch(`/api/questions/${deleteId}`, { method: "DELETE" });
       fetchCrudQuestions(crudPage);
@@ -199,12 +291,12 @@ export default function Home() {
       setDeleteOpen(false);
       setSuccessMsg("Xóa câu hỏi thành công!");
     }
-  };
+  }, [deleteId, crudPage]);
 
-  const cancelDelete = () => {
+  const cancelDelete = useCallback(() => {
     setDeleteId(null);
     setDeleteOpen(false);
-  };
+  }, []);
 
   return (
     <Container maxWidth="md" sx={{ py: 4 }}>
@@ -227,7 +319,7 @@ export default function Home() {
           <Paper sx={{ p: 3, mb: 3 }}>
             <TextField
               fullWidth
-              label="Enter your question"
+              label="Vui lòng nhập câu hỏi"
               value={question}
               onChange={(e) => setQuestion(e.target.value)}
               onKeyPress={(e) => e.key === "Enter" && handleQuestionSubmit()}
@@ -339,9 +431,19 @@ export default function Home() {
                         ))}
                       </Box>
                       <Divider sx={{ my: 1 }} />
-                      <Typography variant="body1" sx={{ fontSize: "0.875rem" }}>
+                      <Box
+                        sx={{
+                          maxHeight: 120,
+                          overflowY: "auto",
+                          background: "#f9fafb",
+                          borderRadius: 2,
+                          p: 1,
+                          fontSize: "0.95rem"
+                        }}
+                        className="custom-scrollbar"
+                      >
                         {question.answer}
-                      </Typography>
+                      </Box>
                     </CardContent>
                   </Card>
                 ))}
@@ -360,8 +462,16 @@ export default function Home() {
       {tab === 1 && (
         <Box className="p-6 bg-gradient-to-br from-blue-50 to-white min-h-screen">
           {/* FORM NHẬP LIỆU */}
-          <Paper className="max-w-xl mx-auto p-8 mb-8 rounded-2xl shadow-lg" elevation={4}>
-            <Typography className="text-center text-2xl font-bold mb-6 text-blue-700">
+          <Paper className="max-w-md mx-auto p-8 mb-10 rounded-2xl shadow-lg" elevation={4} sx={{ pb: 3 }}>
+            <Typography 
+            className="text-center text-2xl font-bold text-blue-700 mt-6" 
+            sx={{
+              fontSize: '1.5rem',
+              fontWeight: 600,
+              color: '#1976d2',
+              margin: '10px 0',
+            }}
+            >
               Thêm câu hỏi mới
             </Typography>
             <Stack spacing={3}>
@@ -370,103 +480,145 @@ export default function Home() {
                 name="question"
                 value={form.question}
                 onChange={handleCrudChange}
-                fullWidth
-                disabled={editingId !== null}
+               
                 InputProps={{ className: 'rounded-lg bg-white' }}
+                className="shadow-sm"
+                sx={{
+                  width: "100%",
+                  '& .MuiInputBase-root': {
+                    fontSize: '0.95rem',
+                    margin: '0 10px',
+                    
+                    borderRadius: '8px',
+                    minHeight: '36px',
+                  },'& .MuiOutlinedInput-notchedOutline': {
+      borderColor: '#b6c2d9',
+    },
+    '&:hover .MuiOutlinedInput-notchedOutline': {
+      
+      fontSize: '0.95rem',
+    },
+    '& .MuiInputLabel-root': {
+      fontWeight: 600,
+      fontSize: '0.80rem',
+    }
+                }}
               />
               <TextField
                 label="Keyword (cách nhau bởi dấu phẩy)"
                 name="keyword"
+                
                 value={form.keyword}
                 onChange={handleCrudChange}
-                fullWidth
-                disabled={editingId !== null}
                 InputProps={{ className: 'rounded-lg bg-white' }}
+                className="shadow-sm"
+                sx={{
+                  width: "100%",
+                  '& .MuiInputBase-root': {
+                    fontSize: '0.95rem',
+                    margin: '0 10px',
+                    
+                    borderRadius: '8px',
+                    minHeight: '36px',
+                  },'& .MuiOutlinedInput-notchedOutline': {
+      borderColor: '#b6c2d9',
+    },
+    '&:hover .MuiOutlinedInput-notchedOutline': {
+      
+      fontSize: '0.95rem',
+    },
+    '& .MuiInputLabel-root': {
+      fontWeight: 600,
+      fontSize: '0.80rem',
+    }
+                }}
               />
               <TextField
                 label="Answer"
                 name="answer"
                 value={form.answer}
                 onChange={handleCrudTextAreaChange}
-                fullWidth
+                required
                 multiline
                 minRows={2}
-                disabled={editingId !== null}
                 InputProps={{ className: 'rounded-lg bg-white' }}
+                className="shadow-sm"
+                sx={{
+                  width: "100%",
+                  '& .MuiInputBase-root': {
+                    fontSize: '0.95rem',
+                    margin: '0 10px',
+                    
+                    borderRadius: '8px',
+                    minHeight: '36px',
+                  },'& .MuiOutlinedInput-notchedOutline': {
+      borderColor: '#b6c2d9',
+    },
+    '&:hover .MuiOutlinedInput-notchedOutline': {
+      
+      fontSize: '0.95rem',
+    },
+    '& .MuiInputLabel-root': {
+      fontWeight: 600,
+      fontSize: '0.80rem',
+    }
+                }}
               />
-              <Button
-                variant="contained"
-                color="primary"
-                fullWidth
-                size="large"
-                onClick={async () => { await handleCrudSubmit(); }}
-                disabled={editingId !== null}
-                className="!bg-blue-600 !text-white !rounded-lg !py-3 !text-lg hover:!bg-blue-700 shadow-md"
+              <Stack
+                spacing={2}
+                direction="row"
+                justifyContent="flex-end"
+                sx={{ pr: 2 }}
               >
-                Thêm
-              </Button>
+                <Button
+                  variant="outlined"
+                  color="inherit"
+                  size="medium"
+                  onClick={() => setForm({ question: '', keyword: '', answer: '' })}
+                  disabled={editingId !== null}
+                  className="!rounded-md !py-1 !px-6 !text-base hover:!bg-gray-200 transition-transform duration-100 active:scale-95 "
+                  sx={{ px: 3, py: 1 }}
+                >
+                  Clear
+                </Button>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  size="medium"
+                  onClick={async () => { await handleCrudSubmit(); }}
+                  disabled={editingId !== null}
+                  className="!bg-blue-600 !text-white !rounded-md !py-1 !px-6 !text-base hover:!bg-blue-700 shadow-md transition-transform duration-100 active:scale-95"
+                  sx={{ px: 3, py: 1 }}
+                >
+                  THÊM
+                </Button>
+              </Stack>
             </Stack>
           </Paper>
           {/* BẢNG DANH SÁCH */}
-          <TableContainer component={Paper} className="mt-8 rounded-2xl shadow-xl max-w-5xl mx-auto">
-            <Table size="small">
-              <TableHead>
-                <TableRow className="bg-blue-100">
-                  <TableCell className="font-bold text-blue-700 text-base py-3">Question</TableCell>
-                  <TableCell className="font-bold text-blue-700 text-base py-3">Keyword</TableCell>
-                  <TableCell className="font-bold text-blue-700 text-base py-3">Answer</TableCell>
-                  <TableCell className="font-bold text-blue-700 text-base py-3 text-center">Hành động</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {crudQuestions?.map((q) => (
-                  <TableRow key={q._id} className="hover:bg-blue-50 transition">
-                    <TableCell className="align-top py-3">{q.question}</TableCell>
-                    <TableCell className="align-top py-3">{Array.isArray(q.keyword) ? q.keyword.join(", ") : q.keyword}</TableCell>
-                    <TableCell className="align-top py-3">{q.answer}</TableCell>
-                    <TableCell className="align-top py-3 text-center">
-                      <Button
-                        size="small"
-                        variant="outlined"
-                        color="warning"
-                        className="mr-2 !rounded-full !border-2 !border-yellow-400 hover:!bg-yellow-100 hover:!border-yellow-500"
-                        onClick={() => handleCrudEdit(q)}
-                        startIcon={<EditIcon />}
-                      >
-                        Sửa
-                      </Button>
-                      <Button
-                        size="small"
-                        variant="outlined"
-                        color="error"
-                        className="!rounded-full !border-2 !border-red-400 hover:!bg-red-100 hover:!border-red-500"
-                        onClick={() => handleCrudDelete(q._id)}
-                        startIcon={<DeleteIcon />}
-                      >
-                        Xoá
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
+          <CrudTable crudQuestions={crudQuestions} handleCrudEdit={handleCrudEdit} handleCrudDelete={handleCrudDelete} />
           {/* PHÂN TRANG */}
-          <Box className="flex justify-center items-center mt-8 gap-6">
+          <Box 
+          className="flex justify-center items-center mt-8 gap-6"
+          sx={{
+            marginTop: '10px',
+          }}
+          >
             <Button
               variant="outlined"
-              size="large"
-              className="!rounded-full !w-12 !h-12 !text-lg !border-blue-400 hover:!bg-blue-100"
+              size="medium"
+              className=" !w-5 !h-5 !text-base !border-blue-400 hover:!bg-blue-100 transition-transform duration-100 active:scale-95"
               disabled={crudPage === 1}
               onClick={() => setCrudPage((p) => Math.max(1, p - 1))}
+            
             >
               &lt;
             </Button>
-            <span className="text-lg font-semibold text-blue-700">Trang {crudPage} / {Math.ceil(crudTotal / crudPageSize) || 1}</span>
+            <span className="text-lg font-semibold text-blue-700"> Trang {crudPage} / {Math.ceil(crudTotal / crudPageSize) || 1}</span>
             <Button
               variant="outlined"
-              size="large"
-              className="!rounded-full !w-12 !h-12 !text-lg !border-blue-400 hover:!bg-blue-100"
+              size="medium"
+              className=" !w-10 !h-10 !text-base !border-blue-400 hover:!bg-blue-100 transition-transform duration-100 active:scale-95"
               disabled={crudPage >= Math.ceil(crudTotal / crudPageSize)}
               onClick={() => setCrudPage((p) => p + 1)}
             >
@@ -491,8 +643,8 @@ export default function Home() {
               <DialogContentText className="text-base">Bạn có chắc chắn muốn xoá câu hỏi này không?</DialogContentText>
             </DialogContent>
             <DialogActions>
-              <Button onClick={cancelDelete} className="!rounded-lg">Huỷ</Button>
-              <Button onClick={confirmDelete} color="error" variant="contained" className="!rounded-lg">Xoá</Button>
+              <Button onClick={cancelDelete} className="!rounded-md !py-1 !px-4 !text-base transition-transform duration-100 active:scale-95">Huỷ</Button>
+              <Button onClick={confirmDelete} color="error" variant="contained" className="!rounded-md !py-1 !px-4 !text-base transition-transform duration-100 active:scale-95">Xoá</Button>
             </DialogActions>
           </Dialog>
           {/* DIALOG SỬA */}
@@ -529,11 +681,11 @@ export default function Home() {
               </Stack>
             </DialogContent>
             <DialogActions>
-              <Button onClick={handleEditClose} className="!rounded-lg">Huỷ</Button>
+              <Button onClick={handleEditClose} className="!rounded-md !py-1 !px-4 !text-base transition-transform duration-100 active:scale-95">Huỷ</Button>
               <Button variant="contained" onClick={async () => {
                 await handleCrudSubmit();
                 setEditOpen(false);
-              }} className="!rounded-lg">Xác nhận</Button>
+              }} className="!rounded-md !py-1 !px-4 !text-base transition-transform duration-100 active:scale-95">Xác nhận</Button>
             </DialogActions>
           </Dialog>
         </Box>
