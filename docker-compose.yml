@@ -1,0 +1,11 @@
+version: '3.8'
+
+services:
+  faq:
+    build: .
+    container_name: faq_app
+    ports:
+      - "6000:3000"
+    env_file:
+      - .env
+    restart: always 

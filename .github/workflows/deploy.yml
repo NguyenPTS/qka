@@ -1,0 +1,51 @@
+name: Main workflow
+on:
+  push:
+    branches:
+      - main
+env:
+  WORKSPACE: /home
+  PROJECT_NAME: ${{ github.event.repository.name }}
+jobs:
+  deploy:
+    name: Deploy
+    runs-on: self-hosted
+    #    needs: scripts.ts-docker-build
+    steps:
+      - name: If Not Found Clone
+        run: |
+          if [ ! -d "$WORKSPACE/$PROJECT_NAME" ]; then
+            git clone https://${{ secrets.GH_TOKEN }}@github.com/pharmatechweb3/$PROJECT_NAME.git $WORKSPACE/$PROJECT_NAME
+          fi
+        shell: /usr/bin/bash -e {0}
+        env:
+          WORKSPACE: /home
+          PROJECT_NAME: pharmatech-new-home
+      - name: Get Project Name
+        id: get_project
+        run: |
+          if [[ "${{github.event.head_commit.message}}" =~ \[cd-(.*)\] ]]; then
+            echo "::set-output name=project::${BASH_REMATCH[1]}"
+          else
+            echo ::set-output name=project::null
+          fi
+      - name: Deploy
+        run: |
+          if [[ "${{ steps.get_project.outputs.project }}" != "null" ]]; then
+              echo "Deploying ${{ steps.get_project.outputs.project }}"
+              cd $WORKSPACE/$PROJECT_NAME
+              git config credential.helper '!f() { sleep 1; echo "username=${{ secrets.GH_USER }}"; echo "password=${{ secrets.GH_TOKEN }}"; }; f'
+              git checkout main
+              git pull
+              CONTAINER_EXISTS=$(docker-compose -f docker-compose.yml ps -q ${{ steps.get_project.outputs.project }})
+              if [ -n "$CONTAINER_EXISTS" ]; then
+                IMAGE_NAME="nest-pharmatech/${{ steps.get_project.outputs.project }}"
+                CONTAINER_ID=$(docker ps -q --filter "ancestor=$IMAGE_NAME")
+                docker stop $CONTAINER_ID
+                docker rm $CONTAINER_ID 
+                docker image rm $IMAGE_NAME
+              fi
+              docker-compose -f docker-compose.yml up -d ${{ steps.get_project.outputs.project }}
+          else
+              echo "No project to deploy"
+          fi
