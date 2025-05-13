@@ -20,7 +20,7 @@ export async function POST(request: Request) {
     }
     if (!keywordArr.length) {
       return NextResponse.json({ error: 'Trường keyword là bắt buộc và phải có ít nhất 1 từ khoá.' }, { status: 400 });
-    }
+    } //ttest
     await connectDB();
     const newQuestion = await Question.create({
       question: body.question.trim(),
