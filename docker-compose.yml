@@ -1,4 +1,3 @@
-
 services:
   faq:
     restart: always
@@ -14,7 +13,8 @@ services:
       - '7000:3000'
     networks:
       - traefik
-  
+    environment:
+      - MONGODB_URI=mongodb://pharmatech:pharmatech_dev_76@103.72.96.222:27017/faq_multivit?authSource=admin
     labels:
       - 'traefik.enable=true'
       - 'traefik.docker.network=traefik'
