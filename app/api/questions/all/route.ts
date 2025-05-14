@@ -9,15 +9,18 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1', 10);
     const pageSize = parseInt(searchParams.get('pageSize') || '10', 10);
     const skip = (page - 1) * pageSize;
+    const sortBy = searchParams.get('sortBy') || 'createdAt';
+    const sortOrder = searchParams.get('sort') === 'asc' ? 1 : -1; // Mặc định mới nhất
     await connectDB();
     console.log('[API] Đã kết nối DB');
     const total = await Question.countDocuments();
     console.log(`[API] Tổng số câu hỏi: ${total}`);
     const questions = await Question.find({})
+      .sort({ [sortBy]: sortOrder })
       .skip(skip)
       .limit(pageSize)
       .lean();
-    console.log(`[API] Trả về ${questions.length} câu hỏi`);
+    console.log(`[API] Trả về ${questions.length} câu hỏi, sortBy=${sortBy}, sort=${sortOrder}`);
     return NextResponse.json({ data: questions, total });
   } catch (error: any) {
     console.error('[API] Lỗi khi fetch all questions:', error);

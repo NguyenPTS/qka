@@ -29,7 +29,11 @@ import {
   DialogTitle,
   DialogContent,
   DialogContentText,
-  DialogActions
+  DialogActions,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel
 } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
@@ -107,8 +111,19 @@ const CrudTable = React.memo(function CrudTable({ crudQuestions, handleCrudEdit,
                 <Button
                   size="small"
                   variant="outlined"
-                  color="warning"
-                  className="mr-2 !rounded-md !py-1 !px-3 !text-sm hover:!bg-yellow-100 hover:!border-yellow-500 transition-transform duration-100 active:scale-95"
+                  color="inherit"
+                  className="mr-2 !rounded-md !py-1 !px-3 !text-sm transition-transform duration-100 active:scale-95"
+                  sx={{
+                    borderColor: '#FFD600',
+                    color: '#FFD600',
+                    backgroundColor: '#FFFDE7',
+                    fontWeight: 600,
+                    '&:hover': {
+                      backgroundColor: '#FFECB3',
+                      borderColor: '#FFB300',
+                      color: '#FFB300',
+                    },
+                  }}
                   onClick={() => handleCrudEdit(q)}
                   startIcon={<EditIcon />}
                 >
@@ -221,16 +236,21 @@ export default function Home() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
+  const [sortBy, setSortBy] = useState<'createdAt' | 'updatedAt'>('createdAt');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [pendingSortBy, setPendingSortBy] = useState<'createdAt' | 'updatedAt'>(sortBy);
+  const [pendingSortOrder, setPendingSortOrder] = useState<'asc' | 'desc'>(sortOrder);
 
-  const fetchCrudQuestions = async (page = 1) => {
-    const res = await fetch(`/api/questions/all?page=${page}&pageSize=${crudPageSize}`);
+  const fetchCrudQuestions = async (page = 1, sortByParam = sortBy, sortOrderParam = sortOrder) => {
+    const res = await fetch(`/api/questions/all?page=${page}&pageSize=${crudPageSize}&sortBy=${sortByParam}&sort=${sortOrderParam}`);
     const data = await res.json();
     setCrudQuestions(data.data);
     setCrudTotal(data.total);
   };
   useEffect(() => {
-    if (tab === 1) fetchCrudQuestions(crudPage);
-  }, [tab, crudPage]);
+    if (tab === 1) fetchCrudQuestions(crudPage, sortBy, sortOrder);
+    // eslint-disable-next-line
+  }, [tab, crudPage, sortBy, sortOrder]);
 
   const handleCrudChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => setForm(f => ({ ...f, [e.target.name]: e.target.value })), []);
   const handleCrudTextAreaChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => setForm(f => ({ ...f, [e.target.name]: e.target.value })), []);
@@ -259,7 +279,7 @@ export default function Home() {
     }
     setForm({ question: "", keyword: "", answer: "" });
     setEditingId(null);
-    fetchCrudQuestions(crudPage);
+    fetchCrudQuestions(crudPage, sortBy, sortOrder);
   };
 
   const handleCrudEdit = useCallback((q: Question) => {
@@ -286,12 +306,12 @@ export default function Home() {
   const confirmDelete = useCallback(async () => {
     if (deleteId) {
       await fetch(`/api/questions/${deleteId}`, { method: "DELETE" });
-      fetchCrudQuestions(crudPage);
+      fetchCrudQuestions(crudPage, sortBy, sortOrder);
       setDeleteId(null);
       setDeleteOpen(false);
       setSuccessMsg("Xóa câu hỏi thành công!");
     }
-  }, [deleteId, crudPage]);
+  }, [deleteId, crudPage, sortBy, sortOrder]);
 
   const cancelDelete = useCallback(() => {
     setDeleteId(null);
@@ -596,6 +616,58 @@ export default function Home() {
             </Stack>
           </Paper>
           {/* BẢNG DANH SÁCH */}
+          <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2, mt: 2 }}>
+            <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', p: 2, border: '1px solid #e3e8ef', borderRadius: 3, background: '#f8fafc', boxShadow: 1 }}>
+              <FormControl size="small" sx={{ minWidth: 140 }}>
+                <InputLabel id="sort-by-label">Sắp xếp theo</InputLabel>
+                <Select
+                  labelId="sort-by-label"
+                  value={pendingSortBy}
+                  label="Sắp xếp theo"
+                  onChange={(e) => setPendingSortBy(e.target.value as 'createdAt' | 'updatedAt')}
+                >
+                  <MenuItem value="createdAt">Ngày tạo</MenuItem>
+                  <MenuItem value="updatedAt">Ngày cập nhật</MenuItem>
+                </Select>
+              </FormControl>
+              <FormControl size="small" sx={{ minWidth: 120 }}>
+                <InputLabel id="sort-order-label">Thứ tự</InputLabel>
+                <Select
+                  labelId="sort-order-label"
+                  value={pendingSortOrder}
+                  label="Thứ tự"
+                  onChange={(e) => setPendingSortOrder(e.target.value as 'asc' | 'desc')}
+                >
+                  <MenuItem value="desc">Mới nhất</MenuItem>
+                  <MenuItem value="asc">Cũ nhất</MenuItem>
+                </Select>
+              </FormControl>
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={() => {
+                  setSortBy(pendingSortBy);
+                  setSortOrder(pendingSortOrder);
+                }}
+                sx={{ minWidth: 100 }}
+              >
+                Áp dụng
+              </Button>
+              <Button
+                variant="outlined"
+                color="inherit"
+                onClick={() => {
+                  setPendingSortBy('createdAt');
+                  setPendingSortOrder('desc');
+                  setSortBy('createdAt');
+                  setSortOrder('desc');
+                }}
+                sx={{ minWidth: 100 }}
+              >
+                Clear
+              </Button>
+            </Box>
+          </Box>
           <CrudTable crudQuestions={crudQuestions} handleCrudEdit={handleCrudEdit} handleCrudDelete={handleCrudDelete} />
           {/* PHÂN TRANG */}
           <Box 
