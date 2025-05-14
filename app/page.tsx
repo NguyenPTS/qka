@@ -150,6 +150,7 @@ const CrudTable = React.memo(function CrudTable({ crudQuestions, handleCrudEdit,
 
 export default function Home() {
   const [tab, setTab] = useState(0);
+  const [prevTab, setPrevTab] = useState(0);
 
   // --- SEARCH STATE & LOGIC ---
   const [question, setQuestion] = useState("");
@@ -240,6 +241,10 @@ export default function Home() {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [pendingSortBy, setPendingSortBy] = useState<'createdAt' | 'updatedAt'>(sortBy);
   const [pendingSortOrder, setPendingSortOrder] = useState<'asc' | 'desc'>(sortOrder);
+  const [isLocked, setIsLocked] = useState(true);
+  const [showPasswordDialog, setShowPasswordDialog] = useState(false);
+  const [passwordInput, setPasswordInput] = useState("");
+  const [passwordError, setPasswordError] = useState("");
 
   const fetchCrudQuestions = async (page = 1, sortByParam = sortBy, sortOrderParam = sortOrder) => {
     const res = await fetch(`/api/questions/all?page=${page}&pageSize=${crudPageSize}&sortBy=${sortByParam}&sort=${sortOrderParam}`);
@@ -318,9 +323,23 @@ export default function Home() {
     setDeleteOpen(false);
   }, []);
 
+  const handleTabChange = (_: any, value: number) => {
+    setPrevTab(tab);
+    setTab(value);
+    if (value === 1 && isLocked) {
+      setShowPasswordDialog(true);
+    }
+  };
+
+  useEffect(() => {
+    if (tab === 1 && isLocked && !showPasswordDialog) {
+      setShowPasswordDialog(true);
+    }
+  }, [tab, isLocked, showPasswordDialog]);
+
   return (
     <Container maxWidth="md" sx={{ py: 4 }}>
-      <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 3 }}>
+      <Tabs value={tab} onChange={handleTabChange} sx={{ mb: 3 }}>
         <Tab label="Tìm kiếm câu hỏi" />
         <Tab label="Quản lý câu hỏi" />
       </Tabs>
@@ -479,9 +498,65 @@ export default function Home() {
           )}
         </>
       )}
-      {tab === 1 && (
-        <Box className="p-6 bg-gradient-to-br from-blue-50 to-white min-h-screen">
-          {/* FORM NHẬP LIỆU */}
+      {tab === 1 && isLocked && (
+        <Dialog open={showPasswordDialog} onClose={() => {}}>
+          <DialogTitle>Nhập mật khẩu để truy cập</DialogTitle>
+          <DialogContent>
+            <TextField
+              type="password"
+              label="Nhập mật khẩu"
+              value={passwordInput}
+              onChange={e => setPasswordInput(e.target.value)}
+              error={!!passwordError}
+              helperText={passwordError}
+              autoFocus
+              fullWidth
+              sx={{ mt: 2 }}
+            />
+          </DialogContent>
+          <DialogActions>
+            <Button
+              onClick={() => {
+                setShowPasswordDialog(false);
+                setTab(prevTab);
+                setPasswordInput("");
+                setPasswordError("");
+              }}
+              variant="outlined"
+              color="inherit"
+            >
+              Quay lại
+            </Button>
+            <Button
+              onClick={() => {
+                if (passwordInput === "ChiPhuong") {
+                  setIsLocked(false);
+                  setShowPasswordDialog(false);
+                  setPasswordInput("");
+                  setPasswordError("");
+                } else {
+                  setPasswordError("Mật khẩu không đúng!");
+                }
+              }}
+              variant="contained"
+              color="primary"
+            >
+              Xác nhận
+            </Button>
+          </DialogActions>
+        </Dialog>
+      )}
+      {tab === 1 && !isLocked && (
+        <>
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
+            <Button
+              variant="outlined"
+              color="error"
+              onClick={() => setIsLocked(true)}
+            >
+              Khoá lại
+            </Button>
+          </Box>
           <Paper className="max-w-md mx-auto p-8 mb-10 rounded-2xl shadow-lg" elevation={4} sx={{ pb: 3 }}>
             <Typography 
             className="text-center text-2xl font-bold text-blue-700 mt-6" 
@@ -615,7 +690,6 @@ export default function Home() {
               </Stack>
             </Stack>
           </Paper>
-          {/* BẢNG DANH SÁCH */}
           <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2, mt: 2 }}>
             <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', p: 2, border: '1px solid #e3e8ef', borderRadius: 3, background: '#f8fafc', boxShadow: 1 }}>
               <FormControl size="small" sx={{ minWidth: 140 }}>
@@ -669,7 +743,6 @@ export default function Home() {
             </Box>
           </Box>
           <CrudTable crudQuestions={crudQuestions} handleCrudEdit={handleCrudEdit} handleCrudDelete={handleCrudDelete} />
-          {/* PHÂN TRANG */}
           <Box 
           className="flex justify-center items-center mt-8 gap-6"
           sx={{
@@ -697,7 +770,6 @@ export default function Home() {
               &gt;
             </Button>
           </Box>
-          {/* SNACKBAR THÔNG BÁO */}
           <Snackbar
             open={!!successMsg}
             autoHideDuration={2500}
@@ -708,7 +780,6 @@ export default function Home() {
               {successMsg}
             </MuiAlert>
           </Snackbar>
-          {/* DIALOG XÁC NHẬN XOÁ */}
           <Dialog open={deleteOpen} onClose={cancelDelete}>
             <DialogTitle className="text-xl font-bold text-red-600">Xác nhận xoá</DialogTitle>
             <DialogContent>
@@ -719,7 +790,6 @@ export default function Home() {
               <Button onClick={confirmDelete} color="error" variant="contained" className="!rounded-md !py-1 !px-4 !text-base transition-transform duration-100 active:scale-95">Xoá</Button>
             </DialogActions>
           </Dialog>
-          {/* DIALOG SỬA */}
           <Dialog open={editOpen} onClose={handleEditClose} maxWidth="sm" fullWidth>
             <DialogTitle className="text-xl font-bold text-blue-700">Cập nhật câu hỏi</DialogTitle>
             <DialogContent>
@@ -760,7 +830,7 @@ export default function Home() {
               }} className="!rounded-md !py-1 !px-4 !text-base transition-transform duration-100 active:scale-95">Xác nhận</Button>
             </DialogActions>
           </Dialog>
-        </Box>
+        </>
       )}
     </Container>
   );
