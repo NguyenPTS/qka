@@ -531,7 +531,7 @@ export default function Home() {
               onClick={() => {
                 if (passwordInput === "ChiPhuong") {
                   setIsLocked(false);
-                  setShowPasswordDialog(false);
+                  setShowPasswordDialog(false); //test
                   setPasswordInput("");
                   setPasswordError("");
                 } else {
