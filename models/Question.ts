@@ -13,6 +13,9 @@ const QuestionSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  images: [{
+    type: String,
+  }],
   createdAt: {
     type: Date,
     default: Date.now,

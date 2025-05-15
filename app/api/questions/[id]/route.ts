@@ -19,19 +19,55 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
   try {
     const body = await request.json();
     await connectDB();
+
+    // Chuẩn bị dữ liệu cập nhật
+    const updateData: any = {};
+    
+    // Nếu có question, cập nhật question
+    if (body.question) {
+      updateData.question = body.question;
+    }
+
+    // Nếu có keyword, cập nhật keyword
+    if (body.keyword) {
+      updateData.keyword = Array.isArray(body.keyword) 
+        ? body.keyword 
+        : body.keyword.split(',').map((k: string) => k.trim());
+    }
+
+    // Nếu có answer, cập nhật answer
+    if (body.answer) {
+      updateData.answer = body.answer;
+    }
+
+    // Nếu có images, cập nhật images
+    if (body.images) {
+      updateData.images = body.images;
+    }
+
+    // Nếu có status, cập nhật status
+    if (body.status) {
+      updateData.status = body.status;
+    }
+
     const updated = await Question.findByIdAndUpdate(
       id,
-      {
-        question: body.question,
-        keyword: Array.isArray(body.keyword) ? body.keyword : (body.keyword || '').split(',').map((k: string) => k.trim()),
-        answer: body.answer,
-      },
+      updateData,
       { new: true }
     ).lean();
-    if (!updated) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+
+    if (!updated) {
+      return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    }
+
     return NextResponse.json(updated);
   } catch (error: any) {
-    return NextResponse.json({ error: 'Internal Server Error', details: error.message }, { status: 500 });
+    console.error('Error updating question:', error);
+    return NextResponse.json({ 
+      error: 'Internal Server Error', 
+      details: error.message,
+      stack: error.stack 
+    }, { status: 500 });
   }
 }
 
