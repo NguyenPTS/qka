@@ -1,8 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  experimental: {
-    serverComponentsExternalPackages: ['mongoose']
-  },
+  experimental: {},
+  serverExternalPackages: ['mongoose'],
   output: 'standalone',
   images: {
     domains: ['wordpress.pharmatech.vn'],
