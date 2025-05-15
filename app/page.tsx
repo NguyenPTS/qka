@@ -349,7 +349,7 @@ export default function Home() {
           <TabsList>
             <TabsTrigger value="0">Tìm kiếm câu hỏi</TabsTrigger>
             <TabsTrigger value="1">Quản lý câu hỏi</TabsTrigger>
-            <TabsTrigger value="2">Thêm câu hỏi bởi sale</TabsTrigger>
+            {/* <TabsTrigger value="2">Thêm câu hỏi bởi sale</TabsTrigger> */}
           </TabsList>
           <TabsContent value="0">
           {/* --- SEARCH UI --- */}
