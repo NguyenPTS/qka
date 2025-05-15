@@ -423,7 +423,7 @@ export default function Home() {
   };
 
   // Add management functions
-  const fetchCrudQuestions = async (page = 1, sortByParam = sortBy, sortOrderParam = sortOrder) => {
+  const fetchCrudQuestions = useCallback(async (page = 1, sortByParam = sortBy, sortOrderParam = sortOrder) => {
     let retries = 3;
     while (retries > 0) {
       try {
@@ -450,19 +450,18 @@ export default function Home() {
         setCrudQuestions(data.questions);
         setCrudTotal(data.total);
         setCrudPage(page);
-        return; // Success, exit the retry loop
+        return;
       } catch (error) {
         console.error('Error fetching questions:', error);
         retries--;
         if (retries === 0) {
           setErrorMsg("Có lỗi khi tải danh sách câu hỏi! Vui lòng thử lại sau.");
         } else {
-          // Wait for 1 second before retrying
           await new Promise(resolve => setTimeout(resolve, 1000));
         }
       }
     }
-  };
+  }, [sortBy, sortOrder]);
 
   useEffect(() => {
     if (tab === "1" && !isLocked) {
@@ -1281,9 +1280,11 @@ export default function Home() {
                                 <div className="grid grid-cols-3 gap-4 mt-4">
                                   {newQuestionImages.map((file, index) => (
                                     <div key={index} className="relative group rounded-lg overflow-hidden shadow-sm">
-                                      <img
+                                      <Image
                                         src={URL.createObjectURL(file)}
                                         alt={`Preview ${index + 1}`}
+                                        width={300}
+                                        height={200}
                                         className="w-full h-32 object-cover"
                                       />
                                       <div className="absolute inset-0 bg-black bg-opacity-40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
@@ -1398,8 +1399,8 @@ export default function Home() {
                             <div className="flex items-center justify-between mb-4">
                               <div className="text-lg font-semibold text-blue-700">Kết quả tìm kiếm</div>
                               <div className="text-sm text-gray-500">
-                                {searchQuestion && <span>Câu hỏi: "{searchQuestion}" </span>}
-                                {searchKeyword && <span>Từ khóa: "{searchKeyword}"</span>}
+                                {searchQuestion && <span>Câu hỏi: &ldquo;{searchQuestion}&rdquo; </span>}
+                                {searchKeyword && <span>Từ khóa: &ldquo;{searchKeyword}&rdquo;</span>}
                               </div>
                             </div>
                             {(() => {
@@ -1523,9 +1524,11 @@ export default function Home() {
                       <div className="grid grid-cols-3 gap-4 mt-4">
                         {saleImagePreviewUrls.map((url, index) => (
                           <div key={index} className="relative group rounded-lg overflow-hidden shadow-sm">
-                            <img
+                            <Image
                               src={url}
                               alt={`Preview ${index + 1}`}
+                              width={300}
+                              height={200}
                               className="w-full h-32 object-cover"
                             />
                             <div className="absolute inset-0 bg-black bg-opacity-40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
@@ -1635,7 +1638,7 @@ export default function Home() {
                                 <div className="grid grid-cols-3 gap-4 mt-4">
                                   {questionImages[question.id].map((file, index) => (
                                     <div key={index} className="relative group rounded-lg overflow-hidden shadow-sm">
-                                      <img
+                                      <Image
                                         src={URL.createObjectURL(file)}
                                         alt={`Answer image ${index + 1}`}
                                         className="w-full h-32 object-cover"
@@ -1841,9 +1844,11 @@ export default function Home() {
                   <div className="grid grid-cols-3 gap-4 mt-4">
                     {editImagePreviews.map((url, index) => (
                       <div key={index} className="relative group rounded-lg overflow-hidden shadow-sm">
-                        <img
+                        <Image
                           src={url}
                           alt={`Preview ${index + 1}`}
+                          width={300}
+                          height={200}
                           className="w-full h-32 object-cover"
                         />
                         <div className="absolute inset-0 bg-black bg-opacity-40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
