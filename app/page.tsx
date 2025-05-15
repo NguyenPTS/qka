@@ -32,13 +32,14 @@ import {
   ArrowUpDown,
   ArrowDown
 } from "lucide-react";
+import Image from 'next/image';
 
 interface Question {
   _id: string;
   question: string;
   keyword: string[];
   answer: string;
-  images?: string[];
+  images?: Array<string | { id: string; url: string }>;
   createdAt?: string;
   __v?: number;
 }
@@ -179,18 +180,21 @@ const CrudTable = React.memo(function CrudTable({
                       <div className="mt-2">
                         <h3 className="text-sm font-medium text-gray-700 mb-2">Hình ảnh đính kèm:</h3>
                         <div className="grid grid-cols-3 gap-4">
-                          {q.images.map((img: string, index: number) => {
-                            const imageUrl = getImageUrl(img);
-                            if (!imageUrl) return null;
+                          {q.images.map((image, index) => {
+                            const imageUrl = typeof image === 'string' ? image : image.url;
+                            const fullImageUrl = getImageUrl(imageUrl);
+                            if (!fullImageUrl) return null;
                             
                             return (
                               <div key={index} className="relative group rounded-lg overflow-hidden shadow-sm">
-                                <img
-                                  src={imageUrl}
+                                <Image
+                                  src={fullImageUrl}
                                   alt={`Answer image ${index + 1}`}
+                                  width={300}
+                                  height={200}
                                   className="w-full h-32 object-cover rounded-lg border border-gray-200"
                                   onError={(e) => {
-                                    console.error(`Error loading image ${index}:`, imageUrl);
+                                    console.error(`Error loading image ${index + 1}:`, fullImageUrl);
                                     const target = e.target as HTMLImageElement;
                                     target.onerror = null;
                                     target.style.display = 'none';
@@ -198,7 +202,7 @@ const CrudTable = React.memo(function CrudTable({
                                 />
                                 <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-opacity">
                                   <a
-                                    href={imageUrl}
+                                    href={fullImageUrl}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100"
@@ -464,7 +468,7 @@ export default function Home() {
     if (tab === "1" && !isLocked) {
       fetchCrudQuestions(1, sortBy, sortOrder);
     }
-  }, [tab, isLocked, sortBy, sortOrder]);
+  }, [tab, isLocked, sortBy, sortOrder, fetchCrudQuestions]);
 
   const handleSortChange = useCallback((field: string) => {
     if (sortBy === field) {
@@ -681,9 +685,10 @@ export default function Home() {
     });
     setEditingId(q._id);
     setEditOpen(true);
-    // Set existing images if any
+    // Convert complex image objects to string URLs
     if (q.images && q.images.length > 0) {
-      setEditImagePreviews(q.images);
+      const imageUrls = q.images.map(img => typeof img === 'string' ? img : img.url);
+      setEditImagePreviews(imageUrls);
     }
   }, []);
 
@@ -710,7 +715,7 @@ export default function Home() {
         setErrorMsg("Có lỗi xảy ra khi xóa câu hỏi!");
       });
     }
-  }, [crudPage, sortBy, sortOrder]);
+  }, [crudPage, sortBy, sortOrder, fetchCrudQuestions]);
 
   const handleTabChange = (_: any, value: string) => {
     setPrevTab(tab);
@@ -993,9 +998,11 @@ export default function Home() {
                                   
                                   return (
                                     <div key={index} className="relative group rounded-lg overflow-hidden shadow-sm">
-                                      <img
+                                      <Image
                                         src={fullImageUrl}
                                         alt={`Answer image ${index + 1}`}
+                                        width={300}
+                                        height={200}
                                         className="w-full h-32 object-cover rounded-lg border border-gray-200"
                                         onError={(e) => {
                                           console.error(`Error loading image ${index + 1}:`, fullImageUrl);
@@ -1683,9 +1690,11 @@ export default function Home() {
                                     
                                     return (
                                       <div key={index} className="relative group rounded-lg overflow-hidden shadow-sm">
-                                        <img
+                                        <Image
                                           src={fullImageUrl}
                                           alt={`Answer image ${index + 1}`}
+                                          width={300}
+                                          height={200}
                                           className="w-full h-32 object-cover rounded-lg border border-gray-200"
                                           onError={(e) => {
                                             console.error(`Error loading image ${index + 1}:`, fullImageUrl);
