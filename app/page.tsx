@@ -443,15 +443,18 @@ export default function Home() {
         }
         
         const data = await response.json();
-        if (!data.questions || !Array.isArray(data.questions)) {
+        console.log('API Response:', data);
+
+        if (!data.success || !data.data || !Array.isArray(data.data.questions)) {
+          console.error('Invalid response format:', data);
           throw new Error('Invalid response format');
         }
         
         // Kiểm tra và cập nhật state chỉ khi có dữ liệu hợp lệ
-        if (data.total !== undefined && typeof data.total === 'number') {
-          setCrudTotal(data.total);
+        if (data.data.total !== undefined && typeof data.data.total === 'number') {
+          setCrudTotal(data.data.total);
           // Đảm bảo trang hiện tại không vượt quá tổng số trang
-          const maxPage = Math.ceil(data.total / 10);
+          const maxPage = Math.ceil(data.data.total / 10);
           const validPage = Math.min(page, maxPage);
           if (validPage !== page) {
             // Nếu trang hiện tại không hợp lệ, tự động chuyển về trang cuối
@@ -466,7 +469,7 @@ export default function Home() {
           }
         }
         
-        setCrudQuestions(data.questions);
+        setCrudQuestions(data.data.questions);
         return;
       } catch (error) {
         console.error('Error fetching questions:', error);

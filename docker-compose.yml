@@ -20,6 +20,8 @@ services:
       - WP_USERNAME=thanhqt
       - WP_PASSWORD=pharmatech76
       - WP_URL=https://wordpress.pharmatech.vn
+      - DEBUG=mongodb:*
+      - NEXT_SHARP_PATH=/tmp/node_modules/sharp
     deploy:
       resources:
         limits:

@@ -6,6 +6,7 @@ import mongoose from 'mongoose';
 import { SaleQuestion } from '../../../types/sale-question';
 
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 interface WPQuestion {
   _id?: string;
@@ -236,11 +237,12 @@ export async function POST(request: Request) {
 }
 
 export async function GET(request: Request) {
+  console.log('Starting GET request for questions at:', new Date().toISOString());
+  
   try {
-    console.log('Starting GET request for questions');
-    
-    // Sử dụng NextRequest để lấy searchParams
+    // Parse URL and params
     const { searchParams } = new URL(request.url);
+    console.log('Raw search params:', Object.fromEntries(searchParams.entries()));
     
     // Parse và validate các params với giá trị mặc định
     const pageParam = searchParams.get('page');
@@ -257,10 +259,12 @@ export async function GET(request: Request) {
     const sortBy = sortByParam || 'createdAt';
     const sortOrder = (sortOrderParam === 'asc' ? 'asc' : 'desc') as 'asc' | 'desc';
 
-    console.log('Query params:', { page, limit, search, keyword, sortBy, sortOrder });
+    console.log('Processed params:', { page, limit, search, keyword, sortBy, sortOrder });
 
     // Đảm bảo kết nối trước khi query
+    console.log('Connecting to MongoDB...');
     await ensureConnection();
+    console.log('MongoDB connected successfully');
 
     // Build MongoDB query với type safety
     const query: Record<string, any> = {};
@@ -281,15 +285,21 @@ export async function GET(request: Request) {
       };
     }
 
+    console.log('MongoDB query:', JSON.stringify(query));
+
     // Build sort options
     const sortOptions: Record<string, 1 | -1> = {
       [sortBy]: sortOrder === 'asc' ? 1 : -1
     };
 
+    console.log('Sort options:', sortOptions);
+
     // Calculate skip value
     const skipValue = Math.max(0, (page - 1) * limit);
+    console.log('Skip value:', skipValue);
 
     // Thực hiện queries
+    console.log('Executing MongoDB queries...');
     const [total, documents] = await Promise.all([
       Question.countDocuments(query),
       Question.find(query)
@@ -299,6 +309,8 @@ export async function GET(request: Request) {
         .lean()
         .exec()
     ]);
+
+    console.log(`Found ${total} total documents, returning ${documents.length} documents`);
 
     // Transform documents với type safety
     const questions = documents.map(doc => ({
@@ -312,6 +324,8 @@ export async function GET(request: Request) {
 
     // Calculate pagination
     const pagination = calculatePagination(page, limit, total);
+
+    console.log('Sending response with pagination:', pagination);
 
     // Return response
     return NextResponse.json({
