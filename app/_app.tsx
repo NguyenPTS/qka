@@ -1,10 +1,6 @@
 import * as React from "react";
 import { AppProps } from "next/app";
 import Head from "next/head";
-import { CssBaseline } from "@mui/material";
-import { ThemeProvider, createTheme } from "@mui/material/styles";
-
-const theme = createTheme();
 
 export default function MyApp({ Component, pageProps }: AppProps) {
   React.useEffect(() => {
@@ -21,10 +17,7 @@ export default function MyApp({ Component, pageProps }: AppProps) {
         <title>QKA App</title>
         <meta name="viewport" content="initial-scale=1, width=device-width" />
       </Head>
-      <ThemeProvider theme={theme}>
-        <CssBaseline />
-        <Component {...pageProps} />
-      </ThemeProvider>
+      <Component {...pageProps} />
     </React.Fragment>
   );
 } 
