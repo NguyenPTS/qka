@@ -14,39 +14,63 @@ async function connectDB() {
   }
   console.log('MongoDB URI:', MONGODB_URI.replace(/:([^:@]+)@/, ':****@'));
 
-  try {
-    console.log('Attempting to connect to MongoDB...');
-    
-    if (cached.conn) {
-      console.log('Using cached connection');
-      return cached.conn;
-    }
+  const maxRetries = 3;
+  let retryCount = 0;
+  let lastError = null;
 
-    if (!cached.promise) {
-      const opts = {
-        bufferCommands: false,
-      };
-
-      console.log('Creating new connection...');
-      cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongoose) => {
-        console.log('MongoDB connected successfully');
-        return mongoose;
-      });
-    }
-
+  while (retryCount < maxRetries) {
     try {
-      cached.conn = await cached.promise;
-      console.log('Connection established');
-      return cached.conn;
-    } catch (e) {
-      cached.promise = null;
-      console.error('Failed to establish connection:', e);
-      throw e;
+      console.log(`Attempt ${retryCount + 1} of ${maxRetries} to connect to MongoDB...`);
+      
+      if (cached.conn) {
+        console.log('Using cached connection');
+        return cached.conn;
+      }
+
+      if (!cached.promise) {
+        const opts = {
+          bufferCommands: false,
+          connectTimeoutMS: 10000, // 10 seconds
+          socketTimeoutMS: 45000,  // 45 seconds
+          serverSelectionTimeoutMS: 10000, // 10 seconds
+          heartbeatFrequencyMS: 5000,     // 5 seconds
+        };
+
+        console.log('Creating new connection...');
+        cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongoose) => {
+          console.log('MongoDB connected successfully');
+          return mongoose;
+        });
+      }
+
+      try {
+        cached.conn = await cached.promise;
+        console.log('Connection established');
+        
+        // Test the connection
+        await mongoose.connection.db.admin().ping();
+        console.log('Connection verified with ping');
+        
+        return cached.conn;
+      } catch (e) {
+        cached.promise = null;
+        lastError = e;
+        console.error(`Failed to establish connection (attempt ${retryCount + 1}):`, e);
+        throw e;
+      }
+    } catch (error) {
+      lastError = error;
+      retryCount++;
+      if (retryCount < maxRetries) {
+        const delay = Math.min(1000 * Math.pow(2, retryCount), 10000); // Exponential backoff with max 10s
+        console.log(`Retrying in ${delay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
     }
-  } catch (error) {
-    console.error('MongoDB connection error:', error);
-    throw error;
   }
+
+  console.error(`Failed to connect to MongoDB after ${maxRetries} attempts`);
+  throw lastError || new Error('Failed to connect to MongoDB');
 }
 
 export default connectDB; 

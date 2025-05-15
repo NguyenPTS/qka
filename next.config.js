@@ -1,23 +1,18 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   experimental: {
-    externalDir: true,
+    serverComponentsExternalPackages: ['mongoose']
   },
   output: 'standalone',
   images: {
+    unoptimized: true,
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: 'wordpress.pharmatech.vn',
-        port: '',
-        pathname: '/wp-content/uploads/**',
+        hostname: '**',
       },
     ],
-  },
-  webpack: (config) => {
-    config.externals = [...config.externals, 'mongoose'];
-    return config;
-  },
+  }
 }
 
 module.exports = nextConfig
