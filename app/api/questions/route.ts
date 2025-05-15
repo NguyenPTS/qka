@@ -1,20 +1,54 @@
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import Question from '@/models/Question';
-import clientPromise from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
 import mongoose from 'mongoose';
+import { SaleQuestion } from '@/types/sale-question';
+
+interface WPQuestion extends SaleQuestion {
+  _id?: string;
+}
+
+interface IQuestion extends mongoose.Document {
+  _id: ObjectId;
+  question: string;
+  answer: string;
+  keyword: string[];
+  images?: string[];
+  createdAt: Date;
+}
+
+const WP_USERNAME = 'thanhqt';
+const WP_PASSWORD = 'pharmatech76';
+const WP_URL = 'https://wordpress.pharmatech.vn';
+
+async function ensureConnection() {
+  try {
+    if (mongoose.connection.readyState !== 1) {
+      await connectDB();
+      console.log('MongoDB connected successfully');
+    }
+  } catch (error) {
+    console.error('MongoDB connection error:', error);
+    throw new Error('Failed to connect to database');
+  }
+}
 
 export async function POST(request: Request) {
   try {
+    console.log('Starting POST request for question');
+    
     const body = await request.json();
-    // Validate
-    if (!body.question || typeof body.question !== 'string' || !body.question.trim()) {
+    
+    // Validate required fields
+    if (!body.question?.trim()) {
       return NextResponse.json({ error: 'Trường question là bắt buộc và phải là chuỗi.' }, { status: 400 });
     }
-    if (!body.answer || typeof body.answer !== 'string' || !body.answer.trim()) {
+    if (!body.answer?.trim()) {
       return NextResponse.json({ error: 'Trường answer là bắt buộc và phải là chuỗi.' }, { status: 400 });
     }
+
+    // Process keywords
     let keywordArr: string[] = [];
     if (Array.isArray(body.keyword)) {
       keywordArr = body.keyword.map((k: string) => String(k).trim()).filter(Boolean);
@@ -25,7 +59,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Trường keyword là bắt buộc và phải có ít nhất 1 từ khoá.' }, { status: 400 });
     }
 
-    // Validate images array if provided
+    // Process images
     let imagesArr: string[] = [];
     if (body.images) {
       if (!Array.isArray(body.images)) {
@@ -34,7 +68,9 @@ export async function POST(request: Request) {
       imagesArr = body.images.map((url: string) => String(url).trim()).filter(Boolean);
     }
 
-    await connectDB();
+    // Ensure MongoDB connection
+    await ensureConnection();
+
     const newQuestion = await Question.create({
       question: body.question.trim(),
       keyword: keywordArr,
@@ -42,55 +78,90 @@ export async function POST(request: Request) {
       images: imagesArr,
       createdAt: body.createdAt || new Date()
     });
+
+    console.log('New question created:', newQuestion._id);
+
     return NextResponse.json(newQuestion, { status: 201 });
-  } catch (error: any) {
-    console.error('Error creating question:', error);
-    return NextResponse.json({ error: 'Internal Server Error', details: error.message }, { status: 500 });
+  } catch (error) {
+    console.error('Error in POST /api/questions:', error);
+    return NextResponse.json({ 
+      error: 'Failed to create question',
+      details: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined
+    }, { status: 500 });
   }
 }
 
 export async function GET(request: Request) {
   try {
-    const { searchParams } = new URL(request.url);
-    const page = Math.max(1, parseInt(searchParams.get("page") || "1"));
-    const limit = Math.max(1, parseInt(searchParams.get("limit") || "10"));
-    const sortBy = searchParams.get("sortBy") || "createdAt";
-    const sortOrder = searchParams.get("sortOrder") || "desc";
-
-    console.log(`Fetching questions: page=${page}, limit=${limit}, sortBy=${sortBy}, sortOrder=${sortOrder}`);
-
-    await connectDB();
+    console.log('Starting GET request for questions');
     
-    // Use mongoose model for querying
-    const total = await Question.countDocuments();
-    console.log(`Total documents: ${total}`);
+    const { searchParams } = new URL(request.url);
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '10');
+    const search = searchParams.get('search') || '';
+    const keyword = searchParams.get('keyword') || '';
+
+    console.log('Query params:', { page, limit, search, keyword });
 
     const skip = (page - 1) * limit;
-    const sort: { [key: string]: 1 | -1 } = {};
-    sort[sortBy] = sortOrder === "asc" ? 1 : -1;
 
-    const questions = await Question.find({})
-      .sort(sort)
-      .skip(skip)
-      .limit(limit)
-      .lean();
+    // Đảm bảo kết nối trước khi query
+    await ensureConnection();
 
-    console.log(`Retrieved ${questions.length} questions`);
+    // Build MongoDB query
+    let query: any = {};
+    
+    if (search) {
+      query.$or = [
+        { question: { $regex: search, $options: 'i' } },
+        { answer: { $regex: search, $options: 'i' } }
+      ];
+    }
 
-    return NextResponse.json({
+    if (keyword) {
+      query.keyword = { 
+        $elemMatch: { 
+          $regex: keyword, 
+          $options: 'i' 
+        } 
+      };
+    }
+
+    console.log('MongoDB query:', JSON.stringify(query, null, 2));
+
+    // Thực hiện song song cả count và find để tối ưu thời gian
+    const [total, questions] = await Promise.all([
+      Question.countDocuments(query).exec(),
+      Question.find(query)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean<IQuestion>()
+        .exec()
+    ]);
+
+    console.log(`Found ${questions.length} questions for current page`);
+
+    const response = {
       questions: questions.map(q => ({
         ...q,
-        _id: q._id.toString()
+        _id: q._id.toString(),
+        createdAt: new Date(q.createdAt).toISOString()
       })),
       total,
       page,
       totalPages: Math.ceil(total / limit)
-    });
+    };
+
+    return NextResponse.json(response);
+
   } catch (error) {
-    console.error("Error in GET /api/questions:", error);
-    return NextResponse.json(
-      { error: "Internal Server Error", details: error instanceof Error ? error.message : "Unknown error" },
-      { status: 500 }
-    );
+    console.error('Error in GET /api/questions:', error);
+    return NextResponse.json({ 
+      error: 'Failed to fetch questions',
+      details: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined
+    }, { status: 500 });
   }
 } 
