@@ -237,25 +237,30 @@ export async function GET(request: Request) {
   try {
     console.log('Starting GET request for questions');
     
-    // Sử dụng searchParams từ URL một cách an toàn
-    const searchParams = new URLSearchParams(request.url.split('?')[1] || '');
+    // Sử dụng NextRequest để lấy searchParams
+    const { searchParams } = new URL(request.url);
     
-    // Parse và validate page number
-    const page = safeParseInt(searchParams.get('page'), 1);
-    const limit = 10; // Cố định 10 items mỗi trang
-    const search = searchParams.get('search') || '';
-    const keyword = searchParams.get('keyword') || '';
-    const sortBy = searchParams.get('sortBy') || 'createdAt';
-    const sortOrder = (searchParams.get('sortOrder') || 'desc') as 'asc' | 'desc';
+    // Parse và validate các params với giá trị mặc định
+    const pageParam = searchParams.get('page');
+    const searchParam = searchParams.get('search');
+    const keywordParam = searchParams.get('keyword');
+    const sortByParam = searchParams.get('sortBy');
+    const sortOrderParam = searchParams.get('sortOrder');
+
+    // Sử dụng giá trị mặc định nếu không có params
+    const page = pageParam ? parseInt(pageParam, 10) : 1;
+    const limit = 10;
+    const search = searchParam || '';
+    const keyword = keywordParam || '';
+    const sortBy = sortByParam || 'createdAt';
+    const sortOrder = (sortOrderParam === 'asc' ? 'asc' : 'desc') as 'asc' | 'desc';
 
     console.log('Query params:', { page, limit, search, keyword, sortBy, sortOrder });
-
-    const skip = (page - 1) * limit;
 
     // Đảm bảo kết nối trước khi query
     await ensureConnection();
 
-    // Build MongoDB query
+    // Build MongoDB query với type safety
     const query: Record<string, any> = {};
     
     if (search) {
@@ -275,22 +280,25 @@ export async function GET(request: Request) {
     }
 
     // Build sort options
-    const sortOptions: Record<string, 1 | -1> = {};
-    sortOptions[sortBy] = sortOrder === 'asc' ? 1 : -1;
+    const sortOptions: Record<string, 1 | -1> = {
+      [sortBy]: sortOrder === 'asc' ? 1 : -1
+    };
 
-    console.log('MongoDB query:', JSON.stringify(query, null, 2));
+    // Calculate skip value
+    const skipValue = Math.max(0, (page - 1) * limit);
 
-    // Thực hiện song song cả count và find để tối ưu thời gian
+    // Thực hiện queries
     const [total, documents] = await Promise.all([
       Question.countDocuments(query),
       Question.find(query)
         .sort(sortOptions)
-        .skip(skip)
+        .skip(skipValue)
         .limit(limit)
         .lean()
+        .exec()
     ]);
 
-    // Chuyển đổi dữ liệu an toàn
+    // Transform documents với type safety
     const questions = documents.map(doc => ({
       _id: doc._id?.toString() || '',
       question: doc.question || '',
@@ -300,21 +308,25 @@ export async function GET(request: Request) {
       createdAt: formatDate(doc.createdAt)
     }));
 
+    // Calculate pagination
     const pagination = calculatePagination(page, limit, total);
-    console.log('Pagination info:', pagination);
 
+    // Return response
     return NextResponse.json({
-      questions,
-      total,
-      pagination
+      success: true,
+      data: {
+        questions,
+        total,
+        pagination
+      }
     });
 
   } catch (error) {
     console.error('Error in GET /api/questions:', error);
     return NextResponse.json({ 
+      success: false,
       error: 'Failed to fetch questions',
-      details: error instanceof Error ? error.message : 'Unknown error',
-      stack: error instanceof Error ? error.stack : undefined
+      details: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 });
   }
 } 
