@@ -1,8 +1,5 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  experimental: {
-    appDir: true,
-  },
   typescript: {
     ignoreBuildErrors: true,
   },
@@ -20,6 +17,13 @@ const nextConfig = {
         pathname: '/wp-content/uploads/**',
       },
     ],
+  },
+  webpack: (config) => {
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      '@': '.',
+    };
+    return config;
   },
 };
 
