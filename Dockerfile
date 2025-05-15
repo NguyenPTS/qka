@@ -1,27 +1,18 @@
 # Build stage
-FROM node:18-alpine AS deps
+FROM node:18-alpine AS builder
 WORKDIR /app
 
 # Install dependencies with caching
 COPY package*.json ./
 RUN apk add --no-cache libc6-compat && \
-    npm config set cache /tmp/npm-cache && \
-    npm cache clean --force && \
-    npm install --production --frozen-lockfile
+    npm install -D autoprefixer@10.4.16 postcss@8.4.32 tailwindcss@3.4.0 && \
+    npm install
 
-# Builder stage
-FROM node:18-alpine AS builder
-WORKDIR /app
-
-# Copy deps
-COPY --from=deps /app/node_modules ./node_modules
+# Copy source code
 COPY . .
 
-# Set production environment
-ENV NODE_ENV=production
-ENV NEXT_TELEMETRY_DISABLED=1
-
 # Build application
+ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
 
 # Production stage
@@ -46,6 +37,9 @@ COPY --from=builder /app/components ./components
 COPY --from=builder /app/lib ./lib
 COPY --from=builder /app/models ./models
 COPY --from=builder /app/types ./types
+COPY --from=builder /app/postcss.config.js ./
+COPY --from=builder /app/tailwind.config.js ./
+COPY --from=builder /app/app/globals.css ./app/
 
 # Set correct permissions
 RUN chown -R nextjs:nodejs /app
