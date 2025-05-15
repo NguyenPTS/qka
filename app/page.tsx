@@ -14,7 +14,7 @@ import {
   Textarea,
   Button,
   Input
-} from "@/components/ui";
+} from "../components/ui";
 import {
   ImageIcon,
   PlusCircle,

@@ -2,7 +2,7 @@
 
 import { CacheProvider } from "@emotion/react";
 import { ReactNode } from "react";
-import { createEmotionCache } from "@/lib/emotion-cache";
+import { createEmotionCache } from "../lib/emotion-cache";
 
 const clientSideEmotionCache = createEmotionCache();
 

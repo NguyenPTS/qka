@@ -1,6 +1,6 @@
 import { NextResponse, NextRequest } from 'next/server';
-import connectDB from '@/lib/mongodb';
-import Question from '@/models/Question';
+import connectDB from '../../../../lib/mongodb';
+import Question from '../../../../models/Question';
 
 export const dynamic = 'force-dynamic'; // Đánh dấu route này là dynamic
 
