@@ -447,21 +447,41 @@ export default function Home() {
           throw new Error('Invalid response format');
         }
         
+        // Kiểm tra và cập nhật state chỉ khi có dữ liệu hợp lệ
+        if (data.total !== undefined && typeof data.total === 'number') {
+          setCrudTotal(data.total);
+          // Đảm bảo trang hiện tại không vượt quá tổng số trang
+          const maxPage = Math.ceil(data.total / 10);
+          const validPage = Math.min(page, maxPage);
+          if (validPage !== page) {
+            // Nếu trang hiện tại không hợp lệ, tự động chuyển về trang cuối
+            setCrudPage(validPage);
+            if (validPage < page) {
+              // Nếu đang ở trang lớn hơn trang cuối, fetch lại dữ liệu
+              fetchCrudQuestions(validPage, sortByParam, sortOrderParam);
+              return;
+            }
+          } else {
+            setCrudPage(page);
+          }
+        }
+        
         setCrudQuestions(data.questions);
-        setCrudTotal(data.total);
-        setCrudPage(page);
         return;
       } catch (error) {
         console.error('Error fetching questions:', error);
         retries--;
         if (retries === 0) {
           setErrorMsg("Có lỗi khi tải danh sách câu hỏi! Vui lòng thử lại sau.");
+          // Reset states khi có lỗi
+          setCrudQuestions([]);
+          setCrudTotal(0);
         } else {
           await new Promise(resolve => setTimeout(resolve, 1000));
         }
       }
     }
-  }, [sortBy, sortOrder, setCrudQuestions, setCrudTotal, setCrudPage, setErrorMsg]);
+  }, [sortBy, sortOrder]);
 
   useEffect(() => {
     if (tab === "1" && !isLocked) {
@@ -1920,11 +1940,11 @@ export default function Home() {
       )}
 
       {/* Pagination */}
-      {crudQuestions.length > 0 && (
+      {crudTotal > 0 ? (
         <div className="mt-6 flex items-center justify-between px-4 py-3 bg-white border-t border-gray-200 sm:px-6 rounded-lg shadow-sm">
           <div className="flex items-center">
             <p className="text-sm text-gray-700">
-              Hiển thị <span className="font-medium">{(crudPage - 1) * 10 + 1}</span> đến{' '}
+              Hiển thị <span className="font-medium">{Math.min((crudPage - 1) * 10 + 1, crudTotal)}</span> đến{' '}
               <span className="font-medium">
                 {Math.min(crudPage * 10, crudTotal)}
               </span>{' '}
@@ -1949,7 +1969,7 @@ export default function Home() {
               <ChevronLeft size={16} />
             </button>
             <span className="relative inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md">
-              {crudPage}
+              {crudPage} / {Math.max(1, Math.ceil(crudTotal / 10))}
             </span>
             <button
               onClick={() => fetchCrudQuestions(crudPage + 1)}
@@ -1968,6 +1988,16 @@ export default function Home() {
               <ChevronsRight size={16} />
             </button>
           </div>
+        </div>
+      ) : (
+        <div className="mt-6 text-center py-8 bg-white rounded-lg shadow-sm">
+          <p className="text-gray-500">Không có câu hỏi nào</p>
+          <button
+            onClick={() => fetchCrudQuestions(1)}
+            className="mt-2 text-sm text-blue-600 hover:text-blue-800"
+          >
+            Tải lại dữ liệu
+          </button>
         </div>
       )}
     </div>

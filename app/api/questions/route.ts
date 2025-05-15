@@ -9,7 +9,7 @@ interface WPQuestion extends SaleQuestion {
   _id?: string;
 }
 
-interface IQuestion extends mongoose.Document {
+interface IQuestion {
   _id: ObjectId;
   question: string;
   answer: string;
@@ -21,6 +21,85 @@ interface IQuestion extends mongoose.Document {
 const WP_USERNAME = 'thanhqt';
 const WP_PASSWORD = 'pharmatech76';
 const WP_URL = 'https://wordpress.pharmatech.vn';
+
+interface MongoQuestion {
+  _id: ObjectId;
+  question: string;
+  answer: string;
+  keyword: string[];
+  images?: string[];
+  createdAt: Date;
+}
+
+interface QuestionResponse {
+  _id: string;
+  question: string;
+  answer: string;
+  keyword: string[];
+  images?: string[];
+  createdAt: string;
+}
+
+interface PaginationInfo {
+  currentPage: number;
+  totalPages: number;
+  totalItems: number;
+  itemsPerPage: number;
+  startItem: number;
+  endItem: number;
+}
+
+function safeParseInt(value: string | null, defaultValue: number): number {
+  if (!value) return defaultValue;
+  const parsed = parseInt(value, 10);
+  return isNaN(parsed) ? defaultValue : parsed;
+}
+
+function calculatePagination(currentPage: number, itemsPerPage: number, totalItems: number): PaginationInfo {
+  // Đảm bảo các giá trị là số dương
+  const total = Math.max(0, totalItems);
+  const limit = Math.max(1, itemsPerPage);
+  const totalPages = Math.max(1, Math.ceil(total / limit));
+  const page = Math.min(totalPages, Math.max(1, currentPage));
+
+  // Tính toán item bắt đầu và kết thúc
+  const startItem = total === 0 ? 0 : (page - 1) * limit + 1;
+  const endItem = Math.min(startItem + limit - 1, total);
+
+  return {
+    currentPage: page,
+    totalPages,
+    totalItems: total,
+    itemsPerPage: limit,
+    startItem,
+    endItem
+  };
+}
+
+function formatDate(date: Date | string | null | undefined): string {
+  if (!date) return '';
+  try {
+    const d = typeof date === 'string' ? new Date(date) : date;
+    if (!(d instanceof Date) || isNaN(d.getTime())) {
+      return '';
+    }
+    return d.toISOString();
+  } catch (error) {
+    console.error('Error formatting date:', error);
+    return '';
+  }
+}
+
+function transformQuestion(doc: MongoQuestion): WPQuestion {
+  return {
+    _id: doc._id.toString(),
+    question: doc.question,
+    answer: doc.answer,
+    keyword: doc.keyword,
+    images: doc.images,
+    createdAt: doc.createdAt
+  };
+}
 
 async function ensureConnection() {
   try {
@@ -79,9 +158,19 @@ export async function POST(request: Request) {
       createdAt: body.createdAt || new Date()
     });
 
-    console.log('New question created:', newQuestion._id);
+    // Chuyển đổi response về dạng QuestionResponse
+    const response: QuestionResponse = {
+      _id: newQuestion._id.toString(),
+      question: newQuestion.question,
+      answer: newQuestion.answer,
+      keyword: newQuestion.keyword,
+      images: newQuestion.images || [],
+      createdAt: formatDate(newQuestion.createdAt)
+    };
 
-    return NextResponse.json(newQuestion, { status: 201 });
+    console.log('New question created:', response._id);
+
+    return NextResponse.json(response, { status: 201 });
   } catch (error) {
     console.error('Error in POST /api/questions:', error);
     return NextResponse.json({ 
@@ -96,9 +185,13 @@ export async function GET(request: Request) {
   try {
     console.log('Starting GET request for questions');
     
-    const { searchParams } = new URL(request.url);
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '10');
+    // Lấy và validate search params
+    const url = new URL(request.url);
+    const searchParams = url.searchParams;
+    
+    // Parse và validate page number
+    const page = safeParseInt(searchParams.get('page'), 1);
+    const limit = 10; // Cố định 10 items mỗi trang
     const search = searchParams.get('search') || '';
     const keyword = searchParams.get('keyword') || '';
 
@@ -110,7 +203,7 @@ export async function GET(request: Request) {
     await ensureConnection();
 
     // Build MongoDB query
-    let query: any = {};
+    const query: Record<string, any> = {};
     
     if (search) {
       query.$or = [
@@ -131,30 +224,33 @@ export async function GET(request: Request) {
     console.log('MongoDB query:', JSON.stringify(query, null, 2));
 
     // Thực hiện song song cả count và find để tối ưu thời gian
-    const [total, questions] = await Promise.all([
-      Question.countDocuments(query).exec(),
+    const [total, documents] = await Promise.all([
+      Question.countDocuments(query),
       Question.find(query)
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)
-        .lean<IQuestion>()
-        .exec()
+        .lean()
     ]);
 
-    console.log(`Found ${questions.length} questions for current page`);
+    // Chuyển đổi dữ liệu an toàn
+    const questions = documents.map(doc => ({
+      _id: doc._id?.toString() || '',
+      question: doc.question || '',
+      answer: doc.answer || '',
+      keyword: Array.isArray(doc.keyword) ? doc.keyword : [],
+      images: Array.isArray(doc.images) ? doc.images : [],
+      createdAt: formatDate(doc.createdAt)
+    }));
 
-    const response = {
-      questions: questions.map(q => ({
-        ...q,
-        _id: q._id.toString(),
-        createdAt: new Date(q.createdAt).toISOString()
-      })),
+    const pagination = calculatePagination(page, limit, total);
+    console.log('Pagination info:', pagination);
+
+    return NextResponse.json({
+      questions,
       total,
-      page,
-      totalPages: Math.ceil(total / limit)
-    };
-
-    return NextResponse.json(response);
+      pagination
+    });
 
   } catch (error) {
     console.error('Error in GET /api/questions:', error);
