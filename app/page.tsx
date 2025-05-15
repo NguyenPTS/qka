@@ -20,7 +20,11 @@ import {
   PlusCircle,
   Trash2,
   Edit,
-  RefreshCw
+  RefreshCw,
+  ChevronsLeft,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsRight
 } from "lucide-react";
 
 interface Question {
@@ -293,18 +297,18 @@ export default function Home() {
   const [saleCurrentTab, setSaleCurrentTab] = useState<'pending' | 'done'>("pending");
 
   const handleSaleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      const filesArray = Array.from(e.target.files);
-      setSaleSelectedImages((prev) => [...prev, ...filesArray]);
-      const newPreviewUrls = filesArray.map((file) => URL.createObjectURL(file));
-      setSaleImagePreviewUrls((prev) => [...prev, ...newPreviewUrls]);
-    }
+    const files = Array.from(e.target.files || []);
+    setSaleSelectedImages((prev) => [...prev, ...files]);
+    const newPreviewUrls = files.map((file) => URL.createObjectURL(file));
+    setSaleImagePreviewUrls((prev) => [...prev, ...newPreviewUrls]);
   };
+
   const removeSaleImage = (index: number) => {
     setSaleSelectedImages((prev) => prev.filter((_, i) => i !== index));
     URL.revokeObjectURL(saleImagePreviewUrls[index]);
     setSaleImagePreviewUrls((prev) => prev.filter((_, i) => i !== index));
   };
+
   const addSaleQuestion = () => {
     if (!saleNewQuestion.trim()) return;
     const newQuestionImages = saleImagePreviewUrls.map((url, index) => ({ id: `img-${Date.now()}-${index}`, url }));
@@ -320,21 +324,26 @@ export default function Home() {
     setSaleSelectedImages([]);
     setSaleImagePreviewUrls([]);
   };
+
   const handleSaleAnswerChange = (questionId: string, value: string) => {
     setSaleAnswers((prev) => ({ ...prev, [questionId]: value }));
   };
+
   const answerSaleQuestion = (questionId: string) => {
     const answer = saleAnswers[questionId];
     if (!answer?.trim()) return;
     setSaleQuestions((prev) => prev.map((q) => (q.id === questionId ? { ...q, status: "done", answer } : q)));
     setSaleAnswers((prev) => { const newAnswers = { ...prev }; delete newAnswers[questionId]; return newAnswers; });
   };
+
   const deleteSaleQuestion = (questionId: string) => {
     setSaleQuestions((prev) => prev.filter((q) => q.id !== questionId));
   };
+
   const resetSaleToPending = (questionId: string) => {
     setSaleQuestions((prev) => prev.map((q) => (q.id === questionId ? { ...q, status: "pending", answer: undefined } : q)));
   };
+
   const saleFilteredQuestions = saleQuestions.filter((q) => q.status === saleCurrentTab);
 
   // Thêm state cho filter tìm kiếm
@@ -681,22 +690,97 @@ export default function Home() {
                     );
                   })()
                 )}
-                <div className="flex justify-center items-center mt-8 gap-6">
-                  <button
-                    onClick={() => setCrudPage((p) => Math.max(1, p - 1))}
-              disabled={crudPage === 1}
-                    className="w-5 h-5 text-base border border-blue-400 hover:bg-blue-100 transition-transform duration-100 active:scale-95"
-            >
-              &lt;
-                  </button>
-            <span className="text-lg font-semibold text-blue-700"> Trang {crudPage} / {Math.ceil(crudTotal / crudPageSize) || 1}</span>
-                  <button
-                    onClick={() => setCrudPage((p) => p + 1)}
-              disabled={crudPage >= Math.ceil(crudTotal / crudPageSize)}
-                    className="w-10 h-10 text-base border border-blue-400 hover:bg-blue-100 transition-transform duration-100 active:scale-95"
-            >
-              &gt;
-                  </button>
+                <div className="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6 mt-4 rounded-lg">
+                  <div className="flex flex-1 justify-between sm:hidden">
+                    <button
+                      onClick={() => setCrudPage((p) => Math.max(1, p - 1))}
+                      disabled={crudPage === 1}
+                      className="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Trước
+                    </button>
+                    <button
+                      onClick={() => setCrudPage((p) => p + 1)}
+                      disabled={crudPage >= Math.ceil(crudTotal / crudPageSize)}
+                      className="relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Sau
+                    </button>
+                  </div>
+                  <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+                    <div>
+                      <p className="text-sm text-gray-700">
+                        Hiển thị <span className="font-medium">{((crudPage - 1) * crudPageSize) + 1}</span> đến{' '}
+                        <span className="font-medium">{Math.min(crudPage * crudPageSize, crudTotal)}</span> trong{' '}
+                        <span className="font-medium">{crudTotal}</span> kết quả
+                      </p>
+                    </div>
+                    <div>
+                      <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+                        <button
+                          onClick={() => setCrudPage(1)}
+                          disabled={crudPage === 1}
+                          className="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          <span className="sr-only">Trang đầu</span>
+                          <ChevronsLeft className="h-5 w-5" aria-hidden="true" />
+                        </button>
+                        <button
+                          onClick={() => setCrudPage(crudPage > 1 ? crudPage - 1 : 1)}
+                          disabled={crudPage === 1}
+                          className="relative inline-flex items-center px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          <span className="sr-only">Trang trước</span>
+                          <ChevronLeft className="h-5 w-5" aria-hidden="true" />
+                        </button>
+                        
+                        {/* Hiển thị các số trang */}
+                        {Array.from({ length: Math.min(5, Math.ceil(crudTotal / crudPageSize)) }, (_, i) => {
+                          let pageNumber;
+                          if (Math.ceil(crudTotal / crudPageSize) <= 5) {
+                            pageNumber = i + 1;
+                          } else if (crudPage <= 3) {
+                            pageNumber = i + 1;
+                          } else if (crudPage >= Math.ceil(crudTotal / crudPageSize) - 2) {
+                            pageNumber = Math.ceil(crudTotal / crudPageSize) - 4 + i;
+                          } else {
+                            pageNumber = crudPage - 2 + i;
+                          }
+
+                          return (
+                            <button
+                              key={i}
+                              onClick={() => setCrudPage(pageNumber)}
+                              className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ${
+                                crudPage === pageNumber
+                                  ? 'z-10 bg-blue-600 text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600'
+                                  : 'text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0'
+                              }`}
+                            >
+                              {pageNumber}
+                            </button>
+                          );
+                        })}
+
+                        <button
+                          onClick={() => setCrudPage(crudPage < Math.ceil(crudTotal / crudPageSize) ? crudPage + 1 : Math.ceil(crudTotal / crudPageSize))}
+                          disabled={crudPage === Math.ceil(crudTotal / crudPageSize)}
+                          className="relative inline-flex items-center px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          <span className="sr-only">Trang sau</span>
+                          <ChevronRight className="h-5 w-5" aria-hidden="true" />
+                        </button>
+                        <button
+                          onClick={() => setCrudPage(Math.ceil(crudTotal / crudPageSize))}
+                          disabled={crudPage === Math.ceil(crudTotal / crudPageSize)}
+                          className="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          <span className="sr-only">Trang cuối</span>
+                          <ChevronsRight className="h-5 w-5" aria-hidden="true" />
+                        </button>
+                      </nav>
+                    </div>
+                  </div>
                 </div>
                 <div className="mt-8 flex justify-center">
                   {successMsg && (
@@ -782,214 +866,217 @@ export default function Home() {
           <TabsContent value="2">
             {/* --- Thêm câu hỏi bởi sale --- */}
             <div className="container mx-auto py-10">
-              <h1 className="text-3xl font-bold mb-8">Quản lý câu hỏi bởi sale</h1>
-              <div className="mb-8">
-                <h2 className="text-xl font-bold mb-2">Thêm câu hỏi mới</h2>
-                <p className="text-base text-muted-foreground">Nhập câu hỏi và tải lên hình ảnh (nếu có)</p>
-              </div>
-              <div className="space-y-4">
-                <div>
-                  <label htmlFor="sale-question">Câu hỏi</label>
-                  <textarea
-                    id="sale-question"
-                    placeholder="Nhập câu hỏi của bạn..."
-                    value={saleNewQuestion}
-                    onChange={(e) => setSaleNewQuestion(e.target.value)}
-                    className="min-h-[100px]"
-                  />
+              <div className="bg-white rounded-xl shadow-lg p-8">
+                <div className="border-b border-gray-200 pb-6 mb-8">
+                  <h1 className="text-3xl font-bold text-blue-700">Quản lý câu hỏi bởi sale</h1>
+                  <p className="text-gray-600 mt-2">Thêm và quản lý các câu hỏi từ khách hàng</p>
                 </div>
-                <div>
-                  <label htmlFor="sale-images">Hình ảnh</label>
-                  <div className="flex items-center gap-2 mt-2">
-                    <button
-                      type="button"
-                      onClick={() => document.getElementById("sale-image-upload")?.click()}
-                      className="flex items-center gap-2 border border-input bg-background"
-                    >
-                      <ImageIcon size={16} />
-                      Chọn hình ảnh
-                    </button>
-                    <input
-                      id="sale-image-upload"
-                      type="file"
-                      multiple
-                      accept="image/*"
-                      onChange={handleSaleImageSelect}
-                      className="hidden"
-                    />
+
+                <div className="bg-blue-50 rounded-xl p-6 mb-8">
+                  <div className="flex items-center gap-2 mb-4">
+                    <PlusCircle className="text-blue-600" size={24} />
+                    <h2 className="text-xl font-bold text-blue-700">Thêm câu hỏi mới</h2>
                   </div>
-                  {saleImagePreviewUrls.length > 0 && (
-                    <div className="grid grid-cols-3 gap-4 mt-4">
-                      {saleImagePreviewUrls.map((url, index) => (
-                        <div key={index} className="relative group">
-                          <img
-                            src={url || "/placeholder.svg"}
-                            alt={`Preview ${index}`}
-                            className="w-full h-32 object-cover rounded-md"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => removeSaleImage(index)}
-                            className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-red-600 text-white rounded-full w-7 h-7 flex items-center justify-center"
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                        </div>
-                      ))}
+                  <p className="text-gray-600 mb-6">Nhập câu hỏi từ khách hàng</p>
+                  
+                  <div className="space-y-6">
+                    <div className="bg-white rounded-lg p-6 shadow-sm">
+                      <label htmlFor="sale-question" className="block text-sm font-medium text-gray-700 mb-2">
+                        Câu hỏi của khách hàng
+                      </label>
+                      <textarea
+                        id="sale-question"
+                        placeholder="Nhập câu hỏi của khách hàng..."
+                        value={saleNewQuestion}
+                        onChange={(e) => setSaleNewQuestion(e.target.value)}
+                        className="w-full min-h-[120px] p-4 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                      />
                     </div>
-                  )}
+
+                    <div className="flex justify-end">
+                      <button
+                        type="button"
+                        onClick={addSaleQuestion}
+                        disabled={!saleNewQuestion.trim()}
+                        className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <PlusCircle size={20} />
+                        Thêm câu hỏi
+                      </button>
+                    </div>
+                  </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={addSaleQuestion}
-                  disabled={!saleNewQuestion.trim()}
-                  className="flex items-center gap-2 bg-blue-600 text-white hover:bg-blue-700"
-                >
-                  <PlusCircle size={16} />
-                  Thêm câu hỏi
-                </button>
-              </div>
-              <div className="mt-8">
-                <h2 className="text-xl font-bold mb-2">Danh sách câu hỏi</h2>
-                <p className="text-base text-muted-foreground">Quản lý và trả lời các câu hỏi</p>
-              </div>
-              <ShadcnTabs value={saleCurrentTab} onValueChange={value => setSaleCurrentTab(value as 'pending' | 'done')}>
-                <TabsList className="mb-4">
-                  <TabsTrigger value="pending">Đang chờ</TabsTrigger>
-                  <TabsTrigger value="done">Đã trả lời</TabsTrigger>
-                </TabsList>
-                <TabsContent value="pending">
-                  {saleFilteredQuestions.length === 0 ? (
-                    <div className="text-center py-8 text-muted-foreground">Không có câu hỏi nào đang chờ</div>
-                  ) : (
-                    <table className="min-w-full divide-y divide-gray-200">
-                      <thead>
-                        <tr>
-                          <th className="px-4 py-2">Câu hỏi</th>
-                          <th className="px-4 py-2">Hình ảnh</th>
-                          <th className="px-4 py-2">Trả lời</th>
-                          <th className="px-4 py-2 w-[150px]">Thao tác</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {saleFilteredQuestions.map((question) => (
-                          <tr key={question.id}>
-                            <td className="font-medium px-4 py-2">{question.text}</td>
-                            <td className="px-4 py-2">
-                              {question.images.length > 0 ? (
-                                <div className="flex gap-2">
-                                  {question.images.map((img: any, index: number) => (
-                                    <img
-                                      key={img.id}
-                                      src={img.url || "/placeholder.svg"}
-                                      alt={`Image ${index + 1}`}
-                                      className="w-12 h-12 object-cover rounded-md"
-                                    />
-                                  ))}
-                                </div>
-                              ) : (
-                                <span className="text-muted-foreground">Không có hình ảnh</span>
-                              )}
-                            </td>
-                            <td className="px-4 py-2">
-                              <textarea
-                                placeholder="Nhập câu trả lời..."
-                                value={saleAnswers[question.id] || ""}
-                                onChange={(e) => handleSaleAnswerChange(question.id, e.target.value)}
-                                className="min-h-[80px]"
-                              />
-                            </td>
-                            <td className="px-4 py-2">
-                              <div className="flex flex-col gap-2">
-                                <button
-                                  onClick={() => answerSaleQuestion(question.id)}
-                                  disabled={!saleAnswers[question.id]?.trim()}
-                                  className="w-full bg-green-600 text-white hover:bg-green-700"
-                                >
-                                  Trả lời
-                                </button>
-                                <button
-                                  onClick={() => deleteSaleQuestion(question.id)}
-                                  className="w-full bg-red-600 text-white hover:bg-red-700"
-                                >
-                                  Xóa
-                                </button>
+
+                <div className="bg-gray-50 rounded-xl p-6">
+                  <div className="flex items-center gap-2 mb-4">
+                    <h2 className="text-xl font-bold text-gray-700">Danh sách câu hỏi</h2>
+                    <span className="px-3 py-1 bg-blue-100 text-blue-700 text-sm font-medium rounded-full">
+                      {saleQuestions.length} câu hỏi
+                    </span>
+                  </div>
+                  <p className="text-gray-600 mb-6">Quản lý và trả lời các câu hỏi từ khách hàng</p>
+
+                  <ShadcnTabs value={saleCurrentTab} onValueChange={value => setSaleCurrentTab(value as 'pending' | 'done')}>
+                    <TabsList className="mb-4">
+                      <TabsTrigger value="pending">Đang chờ</TabsTrigger>
+                      <TabsTrigger value="done">Đã trả lời</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="pending">
+                      {saleFilteredQuestions.length === 0 ? (
+                        <div className="text-center py-8 text-muted-foreground">Không có câu hỏi nào đang chờ</div>
+                      ) : (
+                        <div className="space-y-6">
+                          {saleFilteredQuestions.map((question) => (
+                            <div key={question.id} className="bg-white rounded-lg p-6 shadow-sm">
+                              <div className="mb-4">
+                                <h3 className="font-medium text-gray-900">Câu hỏi:</h3>
+                                <p className="mt-1 text-gray-700">{question.text}</p>
                               </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  )}
-                </TabsContent>
-                <TabsContent value="done">
-                  {saleFilteredQuestions.length === 0 ? (
-                    <div className="text-center py-8 text-muted-foreground">Không có câu hỏi nào đã trả lời</div>
-                  ) : (
-                    <table className="min-w-full divide-y divide-gray-200">
-                      <thead>
-                        <tr>
-                          <th className="px-4 py-2">Câu hỏi</th>
-                          <th className="px-4 py-2">Hình ảnh</th>
-                          <th className="px-4 py-2">Câu trả lời</th>
-                          <th className="px-4 py-2 w-[200px]">Thao tác</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {saleFilteredQuestions.map((question) => (
-                          <tr key={question.id}>
-                            <td className="font-medium px-4 py-2">{question.text}</td>
-                            <td className="px-4 py-2">
-                              {question.images.length > 0 ? (
-                                <div className="flex gap-2">
-                                  {question.images.map((img: any, index: number) => (
-                                    <img
-                                      key={img.id}
-                                      src={img.url || "/placeholder.svg"}
-                                      alt={`Image ${index + 1}`}
-                                      className="w-12 h-12 object-cover rounded-md"
-                                    />
-                                  ))}
+                              
+                              <div className="space-y-4">
+                                <div>
+                                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Trả lời
+                                  </label>
+                                  <textarea
+                                    placeholder="Nhập câu trả lời..."
+                                    value={saleAnswers[question.id] || ""}
+                                    onChange={(e) => handleSaleAnswerChange(question.id, e.target.value)}
+                                    className="w-full min-h-[100px] p-4 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                                  />
                                 </div>
-                              ) : (
-                                <span className="text-muted-foreground">Không có hình ảnh</span>
+
+                                <div>
+                                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Hình ảnh đính kèm
+                                  </label>
+                                  <div className="flex items-center gap-4">
+                                    <button
+                                      type="button"
+                                      onClick={() => document.getElementById(`sale-image-upload-${question.id}`)?.click()}
+                                      className="flex items-center gap-2 px-4 py-2 border-2 border-blue-500 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors"
+                                    >
+                                      <ImageIcon size={20} />
+                                      Chọn hình ảnh
+                                    </button>
+                                    <p className="text-sm text-gray-500">Hỗ trợ: JPG, PNG (Tối đa 5MB)</p>
+                                    <input
+                                      id={`sale-image-upload-${question.id}`}
+                                      type="file"
+                                      multiple
+                                      accept="image/*"
+                                      onChange={(e) => handleSaleImageSelect(e)}
+                                      className="hidden"
+                                    />
+                                  </div>
+
+                                  {question.images && question.images.length > 0 && (
+                                    <div className="grid grid-cols-3 gap-4 mt-4">
+                                      {question.images.map((img: any, index: number) => (
+                                        <div key={img.id} className="relative group rounded-lg overflow-hidden shadow-sm">
+                                          <img
+                                            src={img.url || "/placeholder.svg"}
+                                            alt={`Answer image ${index + 1}`}
+                                            className="w-full h-32 object-cover"
+                                          />
+                                          <div className="absolute inset-0 bg-black bg-opacity-40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                            <button
+                                              type="button"
+                                              onClick={() => removeSaleImage(index)}
+                                              className="p-2 bg-red-600 text-white rounded-full hover:bg-red-700 transition-colors"
+                                            >
+                                              <Trash2 size={16} />
+                                            </button>
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+
+                                <div className="flex justify-end gap-2">
+                                  <button
+                                    onClick={() => deleteSaleQuestion(question.id)}
+                                    className="px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                  >
+                                    <Trash2 size={16} className="inline mr-2" />
+                                    Xóa
+                                  </button>
+                                  <button
+                                    onClick={() => answerSaleQuestion(question.id)}
+                                    disabled={!saleAnswers[question.id]?.trim()}
+                                    className="flex items-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                  >
+                                    Trả lời
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </TabsContent>
+                    <TabsContent value="done">
+                      {saleFilteredQuestions.length === 0 ? (
+                        <div className="text-center py-8 text-muted-foreground">Không có câu hỏi nào đã trả lời</div>
+                      ) : (
+                        <div className="space-y-6">
+                          {saleFilteredQuestions.map((question) => (
+                            <div key={question.id} className="bg-white rounded-lg p-6 shadow-sm">
+                              <div className="mb-4">
+                                <h3 className="font-medium text-gray-900">Câu hỏi:</h3>
+                                <p className="mt-1 text-gray-700">{question.text}</p>
+                              </div>
+
+                              <div className="mb-4">
+                                <h3 className="font-medium text-gray-900">Câu trả lời:</h3>
+                                <p className="mt-1 text-gray-700">{question.answer}</p>
+                              </div>
+
+                              {question.images && question.images.length > 0 && (
+                                <div className="mb-4">
+                                  <h3 className="font-medium text-gray-900 mb-2">Hình ảnh đính kèm:</h3>
+                                  <div className="grid grid-cols-3 gap-4">
+                                    {question.images.map((img: any, index: number) => (
+                                      <div key={img.id} className="relative rounded-lg overflow-hidden shadow-sm">
+                                        <img
+                                          src={img.url || "/placeholder.svg"}
+                                          alt={`Answer image ${index + 1}`}
+                                          className="w-full h-32 object-cover"
+                                        />
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
                               )}
-                            </td>
-                            <td className="px-4 py-2">{question.answer}</td>
-                            <td className="px-4 py-2">
-                              <div className="flex flex-col gap-2">
+
+                              <div className="flex justify-end gap-2">
                                 <button
                                   onClick={() => {
                                     handleSaleAnswerChange(question.id, question.answer || "");
                                     resetSaleToPending(question.id);
                                   }}
-                                  className="w-full flex items-center gap-1 border border-input bg-background"
+                                  className="flex items-center gap-1 px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
                                 >
-                                  <Edit size={14} />
+                                  <Edit size={16} />
                                   Sửa
                                 </button>
                                 <button
-                                  onClick={() => resetSaleToPending(question.id)}
-                                  className="w-full flex items-center gap-1 border border-input bg-background"
-                                >
-                                  <RefreshCw size={14} />
-                                  Chuyển về Pending
-                                </button>
-                                <button
                                   onClick={() => deleteSaleQuestion(question.id)}
-                                  className="w-full bg-red-600 text-white hover:bg-red-700"
+                                  className="px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                                 >
+                                  <Trash2 size={16} className="inline mr-2" />
                                   Xóa
                                 </button>
                               </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  )}
-                </TabsContent>
-              </ShadcnTabs>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </TabsContent>
+                  </ShadcnTabs>
+                </div>
+              </div>
             </div>
           </TabsContent>
         </ShadcnTabs>
