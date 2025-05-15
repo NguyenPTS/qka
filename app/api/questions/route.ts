@@ -327,7 +327,7 @@ export async function GET(request: Request) {
 
     console.log('Sending response with pagination:', pagination);
 
-    // Return response
+    // Return response with consistent format
     return NextResponse.json({
       success: true,
       data: {
@@ -339,10 +339,13 @@ export async function GET(request: Request) {
 
   } catch (error) {
     console.error('Error in GET /api/questions:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Detailed error:', errorMessage);
+    
     return NextResponse.json({ 
       success: false,
       error: 'Failed to fetch questions',
-      details: error instanceof Error ? error.message : 'Unknown error'
+      details: errorMessage
     }, { status: 500 });
   }
 } 

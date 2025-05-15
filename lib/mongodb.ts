@@ -7,11 +7,9 @@ if (!cached) {
 }
 
 async function connectDB() {
-  const MONGODB_URI = process.env.MONGODB_URI;
-  if (!MONGODB_URI) {
-    console.error('MONGODB_URI is not defined!');
-    throw new Error('Please define the MONGODB_URI environment variable inside .env.local');
-  }
+  // Get MongoDB URI from environment variable or use default for development
+  const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/faq';
+  
   console.log('MongoDB URI:', MONGODB_URI.replace(/:([^:@]+)@/, ':****@'));
 
   const maxRetries = 3;

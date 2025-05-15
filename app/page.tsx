@@ -33,11 +33,12 @@ import {
   ArrowDown
 } from "lucide-react";
 import Image from 'next/image';
+import type { StaticImageData } from 'next/image';
 
 interface Question {
-  _id: string;
+  _id?: string;
   question: string;
-  keyword: string[];
+  keyword: string | string[];
   answer: string;
   images?: Array<string | { id: string; url: string }>;
   createdAt?: string;
@@ -94,26 +95,42 @@ const CrudTable = React.memo(function CrudTable({
   getSortIcon: (field: string) => React.ReactNode;
 }) {
   // Hàm kiểm tra và xử lý URL ảnh
-  const getImageUrl = (url: string) => {
-    console.log('Original image URL:', url);
+  const getImageUrl = (url: string | undefined): string | null => {
     if (!url) {
       console.log('URL is empty');
       return null;
     }
-    // Nếu là blob URL, bỏ qua không hiển thị
-    if (url.startsWith('blob:')) {
-      console.log('URL is blob:', url);
-      return null;
-    }
-    // Nếu URL không bắt đầu bằng http hoặc https, thêm domain
-    if (!url.startsWith('http')) {
+    
+    console.log('Original image URL:', url);
+    try {
+      // Nếu là blob URL, bỏ qua không hiển thị
+      if (url.startsWith('blob:')) {
+        console.log('URL is blob:', url);
+        return null;
+      }
+
+      // Nếu URL đã là URL đầy đủ, trả về nguyên bản
+      if (url.match(/^https?:\/\//)) {
+        console.log('Using original URL:', url);
+        return url;
+      }
+
+      // Nếu URL bắt đầu bằng /wp-content, thêm domain
+      if (url.startsWith('/wp-content')) {
+        const fullUrl = `https://wordpress.pharmatech.vn${url}`;
+        console.log('Converted to full URL:', fullUrl);
+        return fullUrl;
+      }
+
+      // Nếu URL không có schema, thêm domain
       const baseUrl = 'https://wordpress.pharmatech.vn';
       const fullUrl = `${baseUrl}${url.startsWith('/') ? '' : '/'}${url}`;
       console.log('Converted to full URL:', fullUrl);
       return fullUrl;
+    } catch (error) {
+      console.error('Error processing image URL:', error);
+      return null;
     }
-    console.log('Using original URL:', url);
-    return url;
   };
 
   // Log toàn bộ dữ liệu câu hỏi để debug
@@ -341,21 +358,6 @@ export default function Home() {
 
   const [editImages, setEditImages] = useState<File[]>([]);
   const [editImagePreviews, setEditImagePreviews] = useState<string[]>([]);
-
-  // Add getImageUrl function
-  const getImageUrl = (url: string) => {
-    if (!url) {
-      return null;
-    }
-    if (url.startsWith('blob:')) {
-      return null;
-    }
-    if (!url.startsWith('http')) {
-      const baseUrl = 'https://wordpress.pharmatech.vn';
-      return `${baseUrl}${url.startsWith('/') ? '' : '/'}${url}`;
-    }
-    return url;
-  };
 
   const handleQuestionSubmit = async () => {
     if (!question.trim()) return;
