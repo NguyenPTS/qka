@@ -31,8 +31,7 @@ RUN addgroup --system --gid 1001 nodejs && \
 # Copy necessary files
 COPY --from=builder /app/next.config.js ./
 COPY --from=builder /app/public ./public
-COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/.next/static ./.next/static
+COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/components ./components
 COPY --from=builder /app/lib ./lib
 COPY --from=builder /app/models ./models
@@ -40,6 +39,10 @@ COPY --from=builder /app/types ./types
 COPY --from=builder /app/postcss.config.js ./
 COPY --from=builder /app/tailwind.config.js ./
 COPY --from=builder /app/app/globals.css ./app/
+COPY --from=builder /app/package*.json ./
+
+# Install production dependencies only
+RUN npm install --production
 
 # Set correct permissions
 RUN chown -R nextjs:nodejs /app
@@ -55,4 +58,4 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
     CMD wget --no-verbose --tries=1 --spider http://localhost:3000/ || exit 1
 
 # Start application
-CMD ["node", "server.js"] 
+CMD ["npm", "start"] 

@@ -16,8 +16,10 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=3000
-    volumes:
-      - .next:/app/.next
+      - MONGODB_URI=mongodb+srv://thanhqt:pharmatech76@cluster0.iqxvxvt.mongodb.net/faq?retryWrites=true&w=majority
+      - WP_USERNAME=thanhqt
+      - WP_PASSWORD=pharmatech76
+      - WP_URL=https://wordpress.pharmatech.vn
     deploy:
       resources:
         limits:
