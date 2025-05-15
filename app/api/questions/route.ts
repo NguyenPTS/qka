@@ -237,17 +237,18 @@ export async function GET(request: Request) {
   try {
     console.log('Starting GET request for questions');
     
-    // Lấy và validate search params
-    const url = new URL(request.url);
-    const searchParams = url.searchParams;
+    // Sử dụng searchParams từ URL một cách an toàn
+    const searchParams = new URLSearchParams(request.url.split('?')[1] || '');
     
     // Parse và validate page number
     const page = safeParseInt(searchParams.get('page'), 1);
     const limit = 10; // Cố định 10 items mỗi trang
     const search = searchParams.get('search') || '';
     const keyword = searchParams.get('keyword') || '';
+    const sortBy = searchParams.get('sortBy') || 'createdAt';
+    const sortOrder = (searchParams.get('sortOrder') || 'desc') as 'asc' | 'desc';
 
-    console.log('Query params:', { page, limit, search, keyword });
+    console.log('Query params:', { page, limit, search, keyword, sortBy, sortOrder });
 
     const skip = (page - 1) * limit;
 
@@ -273,13 +274,17 @@ export async function GET(request: Request) {
       };
     }
 
+    // Build sort options
+    const sortOptions: Record<string, 1 | -1> = {};
+    sortOptions[sortBy] = sortOrder === 'asc' ? 1 : -1;
+
     console.log('MongoDB query:', JSON.stringify(query, null, 2));
 
     // Thực hiện song song cả count và find để tối ưu thời gian
     const [total, documents] = await Promise.all([
       Question.countDocuments(query),
       Question.find(query)
-        .sort({ createdAt: -1 })
+        .sort(sortOptions)
         .skip(skip)
         .limit(limit)
         .lean()
