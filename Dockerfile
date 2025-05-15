@@ -2,9 +2,10 @@
 FROM node:18-alpine AS builder
 WORKDIR /app
 
-# Install dependencies
+# Install dependencies with clean npm cache
 COPY package*.json ./
-RUN npm install --legacy-peer-deps
+RUN npm cache clean --force && \
+    npm install --legacy-peer-deps --force
 
 # Copy source
 COPY . .
