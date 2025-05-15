@@ -42,6 +42,10 @@ COPY --from=builder /app/next.config.js ./
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
+COPY --from=builder /app/components ./components
+COPY --from=builder /app/lib ./lib
+COPY --from=builder /app/models ./models
+COPY --from=builder /app/types ./types
 
 # Set correct permissions
 RUN chown -R nextjs:nodejs /app
