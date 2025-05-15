@@ -34,7 +34,7 @@ export async function POST(request: Request) {
       filename: file.name,
       contentType: file.type
     });
-
+//
     try {
       console.log('Uploading to WordPress...', {
         url: `${wpUrl}/wp-json/wp/v2/media`,
