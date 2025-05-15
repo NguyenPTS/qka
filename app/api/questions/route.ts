@@ -5,8 +5,36 @@ import { ObjectId } from "mongodb";
 import mongoose from 'mongoose';
 import { SaleQuestion } from '@/types/sale-question';
 
-interface WPQuestion extends SaleQuestion {
+interface WPQuestion {
   _id?: string;
+  id: number;
+  date: string;
+  date_gmt: string;
+  guid: {
+    rendered: string;
+  };
+  modified: string;
+  modified_gmt: string;
+  slug: string;
+  status: string;
+  type: string;
+  link: string;
+  title: {
+    rendered: string;
+  };
+  content: {
+    rendered: string;
+    protected: boolean;
+  };
+  featured_media: number;
+  template: string;
+  acf: {
+    keywords: string[];
+    images: {
+      url: string;
+      alt: string;
+    }[];
+  };
 }
 
 interface IQuestion {
@@ -91,13 +119,37 @@ function formatDate(date: Date | string | null | undefined): string {
 }
 
 function transformQuestion(doc: MongoQuestion): WPQuestion {
+  const now = new Date().toISOString();
   return {
     _id: doc._id.toString(),
-    question: doc.question,
-    answer: doc.answer,
-    keyword: doc.keyword,
-    images: doc.images,
-    createdAt: doc.createdAt
+    id: parseInt(doc._id.toString().substring(0, 8), 16),
+    date: now,
+    date_gmt: now,
+    guid: {
+      rendered: `${WP_URL}/questions/${doc._id}`
+    },
+    modified: now,
+    modified_gmt: now,
+    slug: doc.question.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+    status: 'publish',
+    type: 'question',
+    link: `${WP_URL}/questions/${doc._id}`,
+    title: {
+      rendered: doc.question
+    },
+    content: {
+      rendered: doc.answer,
+      protected: false
+    },
+    featured_media: 0,
+    template: '',
+    acf: {
+      keywords: doc.keyword,
+      images: doc.images ? doc.images.map(url => ({
+        url,
+        alt: 'Question image'
+      })) : []
+    }
   };
 }
 

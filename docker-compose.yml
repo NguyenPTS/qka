@@ -3,10 +3,13 @@ version: '3.8'
 services:
   faq:
     container_name: faq
+    image: nest-pharmatech/faq:latest
     build:
       context: .
       dockerfile: Dockerfile
       target: runner
+      args:
+        - NODE_ENV=production
     restart: always
     ports:
       - "3000:3000"
@@ -26,7 +29,6 @@ services:
       interval: 10s
       timeout: 5s
       retries: 3
-    image: nest-pharmatech/faq:latest
     networks:
       - traefik
     labels:
@@ -37,6 +39,7 @@ services:
       - 'traefik.http.routers.faq-secure.entrypoints=https'
       - 'traefik.http.routers.faq-secure.rule=Host(`pharmatech.vn`)'
       - 'traefik.http.routers.faq-secure.tls.certresolver=letsencrypt'
+
 networks:
   traefik:
     external: true

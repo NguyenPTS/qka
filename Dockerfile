@@ -7,7 +7,7 @@ COPY package*.json ./
 RUN apk add --no-cache libc6-compat && \
     npm config set cache /tmp/npm-cache && \
     npm cache clean --force && \
-    npm ci --only=production --prefer-offline --no-audit
+    npm install --production --frozen-lockfile
 
 # Builder stage
 FROM node:18-alpine AS builder

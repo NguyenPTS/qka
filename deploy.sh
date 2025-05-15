@@ -5,6 +5,7 @@ set -e
 PROJECT_NAME="faq"
 DEPLOY_DIR="/c/work/QKA/qka"
 GIT_BRANCH="master"
+DOCKER_REGISTRY="nest-pharmatech"
 
 # Colors for output
 RED='\033[0;31m'
@@ -30,6 +31,8 @@ cleanup() {
     log_info "Cleaning up old containers and images..."
     docker system prune -f
     docker volume prune -f
+    rm -rf node_modules .next
+    npm cache clean --force
 }
 
 # Check disk space
@@ -39,6 +42,18 @@ check_disk_space() {
         log_warn "Low disk space detected: ${available_space}GB available"
         cleanup
     fi
+}
+
+# Build function
+build() {
+    log_info "Installing dependencies..."
+    npm install --production --frozen-lockfile
+
+    log_info "Building application..."
+    npm run build
+
+    log_info "Building Docker image..."
+    docker-compose build --no-cache
 }
 
 # Deploy function
@@ -57,9 +72,15 @@ deploy() {
     # Check disk space before build
     check_disk_space
     
-    # Build and deploy
-    log_info "Building and deploying containers..."
-    docker-compose build --no-cache
+    # Stop existing containers
+    log_info "Stopping existing containers..."
+    docker-compose down || true
+    
+    # Build application
+    build
+    
+    # Start new containers
+    log_info "Starting containers..."
     docker-compose up -d
     
     # Wait for health check
@@ -67,13 +88,13 @@ deploy() {
     for i in {1..30}; do
         if docker-compose ps | grep -q "healthy"; then
             log_info "Service is healthy!"
-            exit 0
+            return 0
         fi
         sleep 2
     done
     
     log_error "Service failed to become healthy within timeout"
-    exit 1
+    return 1
 }
 
 # Main execution
