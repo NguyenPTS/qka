@@ -5,6 +5,8 @@ import { ObjectId } from "mongodb";
 import mongoose from 'mongoose';
 import { SaleQuestion } from '@/types/sale-question';
 
+export const dynamic = 'force-dynamic';
+
 interface WPQuestion {
   _id?: string;
   id: number;
@@ -241,19 +243,12 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     
     // Parse và validate các params với giá trị mặc định
-    const pageParam = searchParams.get('page');
-    const searchParam = searchParams.get('search');
-    const keywordParam = searchParams.get('keyword');
-    const sortByParam = searchParams.get('sortBy');
-    const sortOrderParam = searchParams.get('sortOrder');
-
-    // Sử dụng giá trị mặc định nếu không có params
-    const page = pageParam ? parseInt(pageParam, 10) : 1;
+    const page = parseInt(searchParams.get('page') || '1', 10);
     const limit = 10;
-    const search = searchParam || '';
-    const keyword = keywordParam || '';
-    const sortBy = sortByParam || 'createdAt';
-    const sortOrder = (sortOrderParam === 'asc' ? 'asc' : 'desc') as 'asc' | 'desc';
+    const search = searchParams.get('search') || '';
+    const keyword = searchParams.get('keyword') || '';
+    const sortBy = searchParams.get('sortBy') || 'createdAt';
+    const sortOrder = (searchParams.get('sortOrder') === 'asc' ? 1 : -1);
 
     console.log('Query params:', { page, limit, search, keyword, sortBy, sortOrder });
 
@@ -281,14 +276,14 @@ export async function GET(request: Request) {
 
     // Build sort options
     const sortOptions: Record<string, 1 | -1> = {
-      [sortBy]: sortOrder === 'asc' ? 1 : -1
+      [sortBy]: sortOrder
     };
 
     // Calculate skip value
     const skipValue = Math.max(0, (page - 1) * limit);
 
     // Thực hiện queries
-    const [total, documents] = await Promise.all([
+    const [total, questions] = await Promise.all([
       Question.countDocuments(query),
       Question.find(query)
         .sort(sortOptions)
@@ -299,7 +294,7 @@ export async function GET(request: Request) {
     ]);
 
     // Transform documents với type safety
-    const questions = documents.map(doc => ({
+    const formattedQuestions = questions.map(doc => ({
       _id: doc._id?.toString() || '',
       question: doc.question || '',
       answer: doc.answer || '',
@@ -308,23 +303,16 @@ export async function GET(request: Request) {
       createdAt: formatDate(doc.createdAt)
     }));
 
-    // Calculate pagination
-    const pagination = calculatePagination(page, limit, total);
-
     // Return response
     return NextResponse.json({
-      success: true,
-      data: {
-        questions,
-        total,
-        pagination
-      }
+      questions: formattedQuestions,
+      total,
+      pagination: calculatePagination(page, limit, total)
     });
 
   } catch (error) {
     console.error('Error in GET /api/questions:', error);
     return NextResponse.json({ 
-      success: false,
       error: 'Failed to fetch questions',
       details: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 });
