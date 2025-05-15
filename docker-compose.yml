@@ -1,20 +1,34 @@
+version: '3.8'
+
 services:
   faq:
-    restart: always
+    container_name: faq
     build:
       context: .
       dockerfile: Dockerfile
-      args:
-        PROJECT_NAME: web
-        PORT_PROGRAM: 7000:3000
-    image: nest-pharmatech/faq:latest
-    container_name: nextjs-faq
+      target: runner
+    restart: always
     ports:
-      - '7000:3000'
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+    volumes:
+      - .next:/app/.next
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 512M
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "http://localhost:3000"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    image: nest-pharmatech/faq:latest
     networks:
       - traefik
-    environment:
-      - MONGODB_URI=mongodb://pharmatech:pharmatech_dev_76@103.72.96.222:27017/faq_multivit?authSource=admin
     labels:
       - 'traefik.enable=true'
       - 'traefik.docker.network=traefik'
