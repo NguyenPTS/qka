@@ -1,10 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  experimental: {},
-  serverExternalPackages: ['mongoose'],
+  experimental: {
+    externalDir: true,
+  },
   output: 'standalone',
   images: {
-    domains: ['wordpress.pharmatech.vn'],
     remotePatterns: [
       {
         protocol: 'https',
@@ -13,8 +13,12 @@ const nextConfig = {
         pathname: '/wp-content/uploads/**',
       },
     ],
-  }
+  },
+  webpack: (config) => {
+    config.externals = [...config.externals, 'mongoose'];
+    return config;
+  },
 }
-//
+
 module.exports = nextConfig
 //
