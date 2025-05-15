@@ -17,32 +17,22 @@ jobs:
           echo "WORKSPACE=$WORKSPACE"
           echo "PROJECT_NAME=$PROJECT_NAME"
           echo "PWD=$(pwd)"
-      - name: Get Project Name
-        id: get_project
-        run: |
-          if [[ "${{github.event.head_commit.message}}" =~ \[cd-(.*)\] ]]; then
-            echo "::set-output name=project::${BASH_REMATCH[1]}"
-          else
-            echo ::set-output name=project::null
-          fi
       - name: Deploy
         run: |
-          if [[ "${{ steps.get_project.outputs.project }}" != "null" ]]; then
-              echo "Deploying ${{ steps.get_project.outputs.project }}"
-              cd $WORKSPACE/$PROJECT_NAME
-              git config credential.helper '!f() { sleep 1; echo "username=${{ secrets.GH_USER }}"; echo "password=${{ secrets.GH_TOKEN }}"; }; f'
-              git checkout master
-              git pull
-              CONTAINER_EXISTS=$(docker-compose -f docker-compose.yml ps -q ${{ steps.get_project.outputs.project }})
-              if [ -n "$CONTAINER_EXISTS" ]; then
-                IMAGE_NAME="nest-pharmatech/${{ steps.get_project.outputs.project }}"
-                CONTAINER_ID=$(docker ps -q --filter "ancestor=$IMAGE_NAME")
-                docker stop $CONTAINER_ID
-                docker rm $CONTAINER_ID 
-                docker image rm $IMAGE_NAME
-              fi
-              docker-compose -f docker-compose.yml up -d ${{ steps.get_project.outputs.project }}
-          else
-              echo "No project to deploy"
+          echo "Deploying faq"
+          cd $WORKSPACE/$PROJECT_NAME
+          git config credential.helper '!f() { sleep 1; echo "username=${{ secrets.GH_USER }}"; echo "password=${{ secrets.GH_TOKEN }}"; }; f'
+          git checkout master
+          git pull
+          CONTAINER_EXISTS=$(docker-compose -f docker-compose.yml ps -q faq)
+          if [ -n "$CONTAINER_EXISTS" ]; then
+            IMAGE_NAME="nest-pharmatech/faq"
+            CONTAINER_ID=$(docker ps -q --filter "ancestor=$IMAGE_NAME")
+            if [ -n "$CONTAINER_ID" ]; then
+              docker stop $CONTAINER_ID
+              docker rm $CONTAINER_ID
+              docker image rm $IMAGE_NAME
+            fi
           fi
+          docker-compose -f docker-compose.yml up -d faq
           
