@@ -251,9 +251,10 @@ const CrudTable = React.memo(function CrudTable({
                     <Edit3 size={16} />
                   </button>
                   <button
-                    onClick={() => handleCrudDelete(q._id)}
+                    onClick={() => q._id && handleCrudDelete(q._id)}
                     className="inline-flex items-center p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                     title="Xóa"
+                    disabled={!q._id}
                   >
                     <Trash2 size={16} />
                   </button>
@@ -702,6 +703,12 @@ export default function Home() {
   };
 
   const handleCrudEdit = useCallback((q: Question) => {
+    if (!q._id) {
+      console.error('Cannot edit question: ID is undefined');
+      setErrorMsg("Không thể sửa câu hỏi: ID không tồn tại!");
+      return;
+    }
+
     setForm({
       question: q.question,
       keyword: Array.isArray(q.keyword) ? q.keyword.join(", ") : q.keyword,
@@ -709,6 +716,7 @@ export default function Home() {
     });
     setEditingId(q._id);
     setEditOpen(true);
+    
     // Convert complex image objects to string URLs
     if (q.images && q.images.length > 0) {
       const imageUrls = q.images.map(img => typeof img === 'string' ? img : img.url);
@@ -724,7 +732,13 @@ export default function Home() {
     setEditImagePreviews([]);
   };
 
-  const handleCrudDelete = useCallback((id: string) => {
+  const handleCrudDelete = useCallback((id?: string) => {
+    if (!id) {
+      console.error('Cannot delete question: ID is undefined');
+      setErrorMsg("Không thể xóa câu hỏi: ID không tồn tại!");
+      return;
+    }
+
     if (window.confirm('Bạn có chắc chắn muốn xóa câu hỏi này?')) {
       fetch(`/api/questions/${id}`, { 
         method: "DELETE" 
@@ -887,6 +901,63 @@ export default function Home() {
 
   const saleFilteredQuestions = saleQuestions.filter((q) => q.status === saleCurrentTab);
 
+  // Add type safety for sorting functions
+  const sortQuestions = (a: Question, b: Question, sortBy: string, sortOrder: 'asc' | 'desc') => {
+    if (sortBy === 'createdAt') {
+      const aTime = a._id ? new Date(a._id).getTime() : 0;
+      const bTime = b._id ? new Date(b._id).getTime() : 0;
+      return sortOrder === 'desc' ? bTime - aTime : aTime - bTime;
+    } else {
+      const aTime = ((a as any)?.updatedAt ? new Date((a as any).updatedAt).getTime() : (a._id ? new Date(a._id).getTime() : 0));
+      const bTime = ((b as any)?.updatedAt ? new Date((b as any).updatedAt).getTime() : (b._id ? new Date(b._id).getTime() : 0));
+      return sortOrder === 'desc' ? bTime - aTime : aTime - bTime;
+    }
+  };
+
+  // Add utility function for handling keywords
+  const getKeywordsArray = (keyword: string | string[]): string[] => {
+    return Array.isArray(keyword) ? keyword : [keyword];
+  };
+
+  // Add utility function for handling image URLs
+  const getImageUrl = (url: string): string | null => {
+    if (!url) {
+      console.log('URL is empty');
+      return null;
+    }
+    
+    console.log('Original image URL:', url);
+    try {
+      // Nếu là blob URL, bỏ qua không hiển thị
+      if (url.startsWith('blob:')) {
+        console.log('URL is blob:', url);
+        return null;
+      }
+
+      // Nếu URL đã là URL đầy đủ, trả về nguyên bản
+      if (url.match(/^https?:\/\//)) {
+        console.log('Using original URL:', url);
+        return url;
+      }
+
+      // Nếu URL bắt đầu bằng /wp-content, thêm domain
+      if (url.startsWith('/wp-content')) {
+        const fullUrl = `https://wordpress.pharmatech.vn${url}`;
+        console.log('Converted to full URL:', fullUrl);
+        return fullUrl;
+      }
+
+      // Nếu URL không có schema, thêm domain
+      const baseUrl = 'https://wordpress.pharmatech.vn';
+      const fullUrl = `${baseUrl}${url.startsWith('/') ? '' : '/'}${url}`;
+      console.log('Converted to full URL:', fullUrl);
+      return fullUrl;
+    } catch (error) {
+      console.error('Error processing image URL:', error);
+      return null;
+    }
+  };
+
   return (
     <div className="container mx-auto p-4">
       <div className="flex justify-center w-full min-h-screen bg-gray-50">
@@ -984,7 +1055,7 @@ export default function Home() {
                           <div className="flex-1">
                             <h4 className="text-lg font-semibold text-gray-900 mb-2">{question.question}</h4>
                             <div className="flex flex-wrap gap-2 mb-4">
-                              {question.keyword.map((k, i) => (
+                              {getKeywordsArray(question.keyword).map((k: string, i: number) => (
                                 <button
                                   key={i}
                                   onClick={() => !selectedKeywords.includes(k) && handleKeywordToggle(k)}
@@ -1206,19 +1277,12 @@ export default function Home() {
                                     filtered = filtered.filter(q => q.question.toLowerCase().includes(searchQuestion.trim().toLowerCase()));
                                   }
                                   if (searchKeyword.trim()) {
-                                    filtered = filtered.filter(q => (Array.isArray(q.keyword) ? q.keyword : [q.keyword]).some(kw => kw.toLowerCase().includes(searchKeyword.trim().toLowerCase())));
+                                    filtered = filtered.filter(q => {
+                                      const keywords = Array.isArray(q.keyword) ? q.keyword : [q.keyword];
+                                      return keywords.some(kw => kw.toLowerCase().includes(searchKeyword.trim().toLowerCase()));
+                                    });
                                   }
-                                  filtered = [...filtered].sort((a, b) => {
-                                    if (sortBy === 'createdAt') {
-                                      return sortOrder === 'desc'
-                                        ? new Date(b._id).getTime() - new Date(a._id).getTime()
-                                        : new Date(a._id).getTime() - new Date(b._id).getTime();
-                                    } else {
-                                      return sortOrder === 'desc'
-                                        ? new Date(((b as any)?.updatedAt || b._id)).getTime() - new Date(((a as any)?.updatedAt || a._id)).getTime()
-                                        : new Date(((a as any)?.updatedAt || a._id)).getTime() - new Date(((b as any)?.updatedAt || b._id)).getTime();
-                                    }
-                                  });
+                                  filtered = [...filtered].sort((a, b) => sortQuestions(a, b, sortBy, sortOrder));
                                   if (filtered.length === 0) {
                                     return <div className="text-blue-500">Không tìm thấy kết quả phù hợp.</div>;
                                   }
@@ -1434,19 +1498,12 @@ export default function Home() {
                                 filtered = filtered.filter(q => q.question.toLowerCase().includes(searchQuestion.trim().toLowerCase()));
                               }
                               if (searchKeyword.trim()) {
-                                filtered = filtered.filter(q => (Array.isArray(q.keyword) ? q.keyword : [q.keyword]).some(kw => kw.toLowerCase().includes(searchKeyword.trim().toLowerCase())));
+                                filtered = filtered.filter(q => {
+                                  const keywords = Array.isArray(q.keyword) ? q.keyword : [q.keyword];
+                                  return keywords.some(kw => kw.toLowerCase().includes(searchKeyword.trim().toLowerCase()));
+                                });
                               }
-                              filtered = [...filtered].sort((a, b) => {
-                                if (sortBy === 'createdAt') {
-                                  return sortOrder === 'desc'
-                                    ? new Date(b._id).getTime() - new Date(a._id).getTime()
-                                    : new Date(a._id).getTime() - new Date(b._id).getTime();
-                                } else {
-                                  return sortOrder === 'desc'
-                                    ? new Date(((b as any)?.updatedAt || b._id)).getTime() - new Date(((a as any)?.updatedAt || a._id)).getTime()
-                                    : new Date(((a as any)?.updatedAt || a._id)).getTime() - new Date(((b as any)?.updatedAt || b._id)).getTime();
-                                }
-                              });
+                              filtered = [...filtered].sort((a, b) => sortQuestions(a, b, sortBy, sortOrder));
                               if (filtered.length === 0) {
                                 return (
                                   <div className="text-center py-8">
