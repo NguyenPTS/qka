@@ -14,13 +14,33 @@ export async function GET(request: Request) {
     const keywords = keywordsParam.split(',');
     await connectDB();
 
-    // Chỉ lấy các câu hỏi chứa TẤT CẢ các keyword đã chọn
+    console.log('Searching for keywords:', keywords);
+
+    // Tìm kiếm với điều kiện mở rộng: chỉ cần khớp với một từ khóa
+    // hoặc nếu câu hỏi chứa từ khóa
     const questions = await Question.find({
-      keyword: { $all: keywords }
+      $or: [
+        // Tìm trong mảng keyword của câu hỏi
+        { keyword: { $in: keywords } },
+        // Tìm trong nội dung câu hỏi
+        ...keywords.map(kw => ({ question: { $regex: kw, $options: 'i' } }))
+      ],
+      // Đảm bảo có câu trả lời không trống
+      answer: { $exists: true, $ne: '' }
     }).lean();
 
-    return NextResponse.json(questions);
+    console.log(`Found ${questions.length} questions matching any keywords or content`);
+
+    // Lọc thêm để đảm bảo answer không chỉ là khoảng trắng
+    const filteredQuestions = questions.filter(q => 
+      q.answer && q.answer.trim() !== '' && q.answer.trim() !== ' '
+    );
+
+    console.log(`After filtering empty answers: ${filteredQuestions.length} questions`);
+
+    return NextResponse.json(filteredQuestions);
   } catch (error: any) {
+    console.error('Search error:', error);
     return NextResponse.json({ error: 'Internal Server Error', details: error.message }, { status: 500 });
   }
 } 

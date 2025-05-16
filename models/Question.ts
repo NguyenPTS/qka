@@ -11,11 +11,21 @@ const QuestionSchema = new mongoose.Schema({
   }],
   answer: {
     type: String,
-    required: true,
+    required: false,
+    default: "",
+  },
+  status: {
+    type: String,
+    enum: ['pending', 'answered', 'done'],
+    default: 'pending',
   },
   images: [{
     type: String,
   }],
+  source: {
+    type: String,
+    default: '',
+  },
   createdAt: {
     type: Date,
     default: Date.now,

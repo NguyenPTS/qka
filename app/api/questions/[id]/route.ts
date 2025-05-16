@@ -38,6 +38,13 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     // Nếu có answer, cập nhật answer
     if (body.answer) {
       updateData.answer = body.answer;
+      
+      // Khi có câu trả lời, tự động đặt status thành 'answered'
+      // trừ khi status được chỉ định rõ ràng
+      if (!body.status) {
+        console.log('Auto setting status to "answered" due to answer being provided');
+        updateData.status = 'answered';
+      }
     }
 
     // Nếu có images, cập nhật images
@@ -47,8 +54,11 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 
     // Nếu có status, cập nhật status
     if (body.status) {
+      console.log(`Using explicitly provided status: "${body.status}"`);
       updateData.status = body.status;
     }
+    
+    console.log('Updating question with data:', JSON.stringify(updateData, null, 2));
 
     const updated = await Question.findByIdAndUpdate(
       id,
@@ -60,7 +70,15 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       return NextResponse.json({ error: 'Not found' }, { status: 404 });
     }
 
-    return NextResponse.json(updated);
+    console.log('Updated question:', {
+      id: updated._id,
+      status: updated.status,
+      answer: updated.answer?.substring(0, 30)
+    });
+
+    return NextResponse.json(updated, {
+      headers: { 'Content-Type': 'application/json' }
+    });
   } catch (error: any) {
     console.error('Error updating question:', error);
     return NextResponse.json({ 

@@ -68,6 +68,7 @@ interface QuestionResponse {
   answer: string;
   keyword: string[];
   images?: string[];
+  status: string;
   createdAt: string;
 }
 
@@ -173,12 +174,27 @@ export async function POST(request: Request) {
     console.log('Starting POST request for question');
     
     const body = await request.json();
+    console.log('Request body received:', {
+      question: body.question?.substring(0, 30) + '...',
+      keywordLength: body.keyword?.length,
+      answerLength: body.answer?.length,
+      imagesCount: body.images?.length,
+      source: body.source || 'default',
+      createdAt: body.createdAt
+    });
+    
+    // Special handling for questions from 'sale' source
+    const isSaleSource = body.source === 'sale';
     
     // Validate required fields
     if (!body.question?.trim()) {
+      console.error('Validation error: question field is required');
       return NextResponse.json({ error: 'Trường question là bắt buộc và phải là chuỗi.' }, { status: 400 });
     }
-    if (!body.answer?.trim()) {
+    
+    // For non-sale sources, answer is required
+    if (!isSaleSource && !body.answer?.trim()) {
+      console.error('Validation error: answer field is required');
       return NextResponse.json({ error: 'Trường answer là bắt buộc và phải là chuỗi.' }, { status: 400 });
     }
 
@@ -189,29 +205,49 @@ export async function POST(request: Request) {
     } else if (typeof body.keyword === 'string') {
       keywordArr = body.keyword.split(',').map((k: string) => k.trim()).filter(Boolean);
     }
-    if (!keywordArr.length) {
+    
+    // For non-sale sources, keywords are required
+    if (!isSaleSource && !keywordArr.length) {
+      console.error('Validation error: keyword field is required');
       return NextResponse.json({ error: 'Trường keyword là bắt buộc và phải có ít nhất 1 từ khoá.' }, { status: 400 });
     }
+    
+    // For sale source, allow empty keywords array
 
     // Process images
     let imagesArr: string[] = [];
     if (body.images) {
       if (!Array.isArray(body.images)) {
+        console.error('Validation error: images field must be an array');
         return NextResponse.json({ error: 'Trường images phải là một mảng các URL.' }, { status: 400 });
       }
       imagesArr = body.images.map((url: string) => String(url).trim()).filter(Boolean);
     }
 
     // Ensure MongoDB connection
+    console.log('Ensuring MongoDB connection...');
     await ensureConnection();
+    console.log('MongoDB connected successfully');
+
+    // Determine status based on whether it has an answer
+    const status = body.answer?.trim() ? 'answered' : 'pending';
+    
+    // Override status if explicitly provided
+    const finalStatus = body.status || status;
+    
+    console.log('Creating new question with status:', finalStatus);
 
     const newQuestion = await Question.create({
       question: body.question.trim(),
       keyword: keywordArr,
-      answer: body.answer.trim(),
+      answer: body.answer?.trim() || ' ',  // Use space as default for empty answers
       images: imagesArr,
-      createdAt: body.createdAt || new Date()
+      source: body.source || '',
+      createdAt: body.createdAt || new Date(),
+      status: finalStatus
     });
+
+    console.log('New question created with ID:', newQuestion._id);
 
     // Chuyển đổi response về dạng QuestionResponse
     const response: QuestionResponse = {
@@ -220,14 +256,21 @@ export async function POST(request: Request) {
       answer: newQuestion.answer,
       keyword: newQuestion.keyword,
       images: newQuestion.images || [],
+      status: newQuestion.status,
       createdAt: formatDate(newQuestion.createdAt)
     };
 
-    console.log('New question created:', response._id);
+    console.log('Question saved successfully to MongoDB with ID:', response._id);
+    console.log('Question status:', response.status);
 
     return NextResponse.json(response, { status: 201 });
   } catch (error) {
-    console.error('Error in POST /api/questions:', error);
+    console.error('Detailed error in POST /api/questions:', error instanceof Error ? {
+      name: error.name,
+      message: error.message,
+      stack: error.stack
+    } : error);
+    
     return NextResponse.json({ 
       error: 'Failed to create question',
       details: error instanceof Error ? error.message : 'Unknown error',
@@ -237,115 +280,151 @@ export async function POST(request: Request) {
 }
 
 export async function GET(request: Request) {
-  console.log('Starting GET request for questions at:', new Date().toISOString());
-  
   try {
-    // Parse URL and params
+    console.log('Handling GET request for questions');
     const { searchParams } = new URL(request.url);
-    console.log('Raw search params:', Object.fromEntries(searchParams.entries()));
     
-    // Parse và validate các params với giá trị mặc định
+    // Lấy các tham số tìm kiếm từ URL
+    const searchQuestion = searchParams.get('searchQuestion');
+    const searchKeyword = searchParams.get('searchKeyword');
+    
+    // Lấy tham số phân trang
     const pageParam = searchParams.get('page');
-    const searchParam = searchParams.get('search');
-    const keywordParam = searchParams.get('keyword');
-    const sortByParam = searchParams.get('sortBy');
-    const sortOrderParam = searchParams.get('sortOrder');
-
-    // Sử dụng giá trị mặc định nếu không có params
-    const page = pageParam ? parseInt(pageParam, 10) : 1;
-    const limit = 10;
-    const search = searchParam || '';
-    const keyword = keywordParam || '';
-    const sortBy = sortByParam || 'createdAt';
-    const sortOrder = (sortOrderParam === 'asc' ? 'asc' : 'desc') as 'asc' | 'desc';
-
-    console.log('Processed params:', { page, limit, search, keyword, sortBy, sortOrder });
-
-    // Đảm bảo kết nối trước khi query
-    console.log('Connecting to MongoDB...');
-    await ensureConnection();
-    console.log('MongoDB connected successfully');
-
-    // Build MongoDB query với type safety
-    const query: Record<string, any> = {};
+    const limitParam = searchParams.get('limit');
+    const page = safeParseInt(pageParam, 1);
+    const limit = safeParseInt(limitParam, 10);
     
-    if (search) {
-      query.$or = [
-        { question: { $regex: search, $options: 'i' } },
-        { answer: { $regex: search, $options: 'i' } }
-      ];
+    // Lấy tham số sắp xếp
+    const sortBy = searchParams.get('sortBy') || 'createdAt';
+    const sortOrder = searchParams.get('sortOrder') || 'desc';
+    const sortDirection = sortOrder === 'asc' ? 1 : -1;
+    
+    // Lấy tham số nguồn và trạng thái
+    const source = searchParams.get('source');
+    const status = searchParams.get('status');
+    
+    console.log('Search params:', {
+      page, 
+      limit, 
+      sortBy, 
+      sortOrder,
+      source: source || 'all',
+      status: status || 'all',
+      searchQuestion: searchQuestion || 'none',
+      searchKeyword: searchKeyword || 'none'
+    });
+    
+    // Xây dựng query object
+    const query: any = {};
+    
+    // Lọc theo source nếu có
+    if (source) {
+      query.source = source;
+    }
+    
+    // Lọc theo status nếu có
+    if (status) {
+      // Xử lý nhiều status được phân tách bởi dấu phẩy
+      if (status.includes(',')) {
+        const statusArray = status.split(',').map(s => s.trim());
+        query.status = { $in: statusArray };
+        console.log(`Filtering by multiple statuses: ${statusArray.join(', ')}`);
+      } else {
+        query.status = status;
+        console.log(`Filtering by status: ${status}`);
+      }
+    }
+    
+    // Tìm kiếm theo câu hỏi nếu có
+    if (searchQuestion) {
+      // Sử dụng $regex để tìm kiếm không phân biệt chữ hoa/thường
+      query.question = { $regex: searchQuestion, $options: 'i' };
+      console.log(`Searching for questions containing: "${searchQuestion}"`);
+    }
+    
+    // Tìm kiếm theo từ khóa nếu có
+    if (searchKeyword) {
+      // Hỗ trợ tìm kiếm trên cả mảng keyword và string keyword
+      // Phân tách searchKeyword thành các từ khóa riêng lẻ nếu có dấu phẩy
+      const keywordArray = searchKeyword.split(',').map(k => k.trim());
+      
+      if (keywordArray.length > 1) {
+        // Tìm các bản ghi có ít nhất một từ khóa phù hợp
+        const keywordQueries = keywordArray.map(k => {
+          // Tạo pattern regex cho mỗi từ khóa
+          const pattern = new RegExp(k, 'i');
+          return { 
+            $or: [
+              // Trường hợp keyword là string
+              { keyword: { $regex: pattern } },
+              // Trường hợp keyword là array
+              { keyword: { $elemMatch: { $regex: pattern } } }
+            ]
+          };
+        });
+        
+        // Thêm điều kiện OR để khớp với bất kỳ từ khóa nào
+        query.$or = keywordQueries;
+        console.log(`Searching for multiple keywords: ${keywordArray.join(', ')}`);
+      } else {
+        // Chỉ một từ khóa duy nhất
+        const pattern = new RegExp(searchKeyword, 'i');
+        query.$or = [
+          // Trường hợp keyword là string
+          { keyword: { $regex: pattern } },
+          // Trường hợp keyword là array
+          { keyword: { $elemMatch: { $regex: pattern } } }
+        ];
+        console.log(`Searching for keyword: "${searchKeyword}"`);
+      }
     }
 
-    if (keyword) {
-      query.keyword = { 
-        $elemMatch: { 
-          $regex: keyword, 
-          $options: 'i' 
-        } 
-      };
-    }
-
-    console.log('MongoDB query:', JSON.stringify(query));
-
-    // Build sort options
-    const sortOptions: Record<string, 1 | -1> = {
-      [sortBy]: sortOrder === 'asc' ? 1 : -1
-    };
-
-    console.log('Sort options:', sortOptions);
-
-    // Calculate skip value
-    const skipValue = Math.max(0, (page - 1) * limit);
-    console.log('Skip value:', skipValue);
-
-    // Thực hiện queries
-    console.log('Executing MongoDB queries...');
-    const [total, documents] = await Promise.all([
-      Question.countDocuments(query),
-      Question.find(query)
-        .sort(sortOptions)
-        .skip(skipValue)
-        .limit(limit)
-        .lean()
-        .exec()
-    ]);
-
-    console.log(`Found ${total} total documents, returning ${documents.length} documents`);
-
-    // Transform documents với type safety
-    const questions = documents.map(doc => ({
-      _id: doc._id?.toString() || '',
-      question: doc.question || '',
-      answer: doc.answer || '',
-      keyword: Array.isArray(doc.keyword) ? doc.keyword : [],
-      images: Array.isArray(doc.images) ? doc.images : [],
+    // Đảm bảo kết nối MongoDB
+    await ensureConnection();
+    
+    // Log thông tin về query
+    console.log('Final MongoDB query:', JSON.stringify(query, null, 2));
+    
+    // Thực hiện truy vấn để lấy tổng số câu hỏi phù hợp với filter
+    const total = await Question.countDocuments(query);
+    console.log(`Total matching documents: ${total}`);
+    
+    // Thông tin phân trang
+    const pagination = calculatePagination(page, limit, total);
+    const skip = (pagination.currentPage - 1) * pagination.itemsPerPage;
+    
+    // Truy vấn với phân trang và sắp xếp
+    let questions = await Question.find(query)
+      .sort({ [sortBy]: sortDirection })
+      .skip(skip)
+      .limit(pagination.itemsPerPage);
+    
+    // Chuyển đổi dữ liệu trả về
+    const formattedQuestions = questions.map(doc => ({
+      _id: doc._id.toString(),
+      question: doc.question,
+      keyword: doc.keyword,
+      answer: doc.answer,
+      images: doc.images,
+      status: doc.status || 'pending', // Default to 'pending' if status is not set
       createdAt: formatDate(doc.createdAt)
     }));
-
-    // Calculate pagination
-    const pagination = calculatePagination(page, limit, total);
-
-    console.log('Sending response with pagination:', pagination);
-
-    // Return response with consistent format
+    
+    console.log(`Returning ${formattedQuestions.length} questions`);
+    
     return NextResponse.json({
       success: true,
       data: {
-        questions,
-        total,
-        pagination
+        questions: formattedQuestions,
+        pagination,
+        total
       }
     });
-
   } catch (error) {
     console.error('Error in GET /api/questions:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    console.error('Detailed error:', errorMessage);
-    
-    return NextResponse.json({ 
-      success: false,
-      error: 'Failed to fetch questions',
-      details: errorMessage
-    }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: 'Failed to fetch questions' },
+      { status: 500 }
+    );
   }
 } 
