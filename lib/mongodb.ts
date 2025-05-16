@@ -9,10 +9,25 @@ if (!cached) {
 async function connectDB() {
   try {
     // Get MongoDB URI from environment variable or use default for development
-    const MONGODB_URI = process.env.MONGODB_URI;
+    let MONGODB_URI = process.env.MONGODB_URI;
     
+    // Kiểm tra và sử dụng URI mặc định nếu không có URI hợp lệ
     if (!MONGODB_URI) {
-      throw new Error('Please define the MONGODB_URI environment variable');
+      MONGODB_URI = 'mongodb://pharmatech:pharmatech_dev_76@103.72.96.222:27017/faq_multivit?authSource=admin';
+      console.log('No MONGODB_URI found in environment, using default URI');
+    }
+
+    // Kiểm tra xem URI có phải là Atlas URI không (nếu là Atlas URI nhưng không khả dụng, sử dụng URI mặc định)
+    if (MONGODB_URI.includes('mongodb.net') && !MONGODB_URI.includes('103.72.96.222')) {
+      console.log('MongoDB Atlas URI detected, but may not be accessible. Adding fallback...');
+      // Nếu kết nối Atlas thất bại, sẽ sử dụng URI mặc định
+      try {
+        await mongoose.connect(MONGODB_URI, { serverSelectionTimeoutMS: 5000 });
+        await mongoose.connection.close();
+      } catch (e) {
+        console.log('Could not connect to MongoDB Atlas, using default URI instead');
+        MONGODB_URI = 'mongodb://pharmatech:pharmatech_dev_76@103.72.96.222:27017/faq_multivit?authSource=admin';
+      }
     }
 
     console.log('MongoDB URI:', MONGODB_URI.replace(/:([^:@]+)@/, ':****@'));

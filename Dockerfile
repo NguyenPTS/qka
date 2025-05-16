@@ -31,7 +31,6 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=3000
-ENV MONGODB_URI=mongodb://pharmatech:pharmatech_dev_76@103.72.96.222:27017/faq_multivit?authSource=admin
 
 # Create non-root user
 RUN addgroup --system --gid 1001 nodejs && \
