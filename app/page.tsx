@@ -2527,20 +2527,6 @@ export default function Home() {
                             </div>
 
                             <div className="flex justify-end gap-2">
-                              <button
-                                onClick={() => deleteSaleQuestion(question.id)}
-                                className="px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                              >
-                                <Trash2 size={16} className="inline mr-2" />
-                                Xóa
-                              </button>
-                              <button
-                                onClick={() => answerSaleQuestion(question.id)}
-                                disabled={!saleAnswers[question.id]?.trim()}
-                                className="px-4 py-2 bg-blue-600 text-white rounded-md disabled:opacity-50"
-                              >
-                                Trả lời
-                              </button>
                             </div>
                           </>
                         ) : (
@@ -2608,49 +2594,6 @@ export default function Home() {
                             )}
 
                             <div className="flex justify-end gap-2">
-                              <button
-                                onClick={async () => {
-                                  handleSaleAnswerChange(question.id, question.answer || "");
-                                  
-                                  try {
-                                    // Cập nhật trạng thái thành 'pending' qua API
-                                    if (question._id) {
-                                      const updateData = {
-                                        status: 'pending'
-                                      };
-                                      
-                                      console.log('Đang đặt lại trạng thái câu hỏi thành pending:', question._id);
-                                      
-                                      const response = await fetch(`/api/questions/${question._id}`, {
-                                        method: "PUT",
-                                        headers: {
-                                          "Content-Type": "application/json",
-                                        },
-                                        body: JSON.stringify(updateData),
-                                      });
-                                      
-                                      if (response.ok) {
-                                        console.log('Đã cập nhật trạng thái thành pending thành công');
-                                      }
-                                    }
-                                  } catch (error) {
-                                    console.error('Lỗi khi cập nhật trạng thái:', error);
-                                  }
-                                  
-                                  resetSaleToPending(question.id);
-                                }}
-                                className="flex items-center gap-1 px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-                              >
-                                <Edit size={16} />
-                                Sửa
-                              </button>
-                              <button
-                                onClick={() => deleteSaleQuestion(question.id)}
-                                className="px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                              >
-                                <Trash2 size={16} className="inline mr-2" />
-                                Xóa
-                              </button>
                             </div>
                           </>
                         )}
