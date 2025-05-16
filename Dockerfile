@@ -11,6 +11,14 @@ RUN apk add --no-cache libc6-compat && \
 # Copy source code
 COPY . .
 
+# Create default env file if not exists
+RUN if [ ! -f .env.production ]; then \
+    echo "MONGODB_URI=mongodb://pharmatech:pharmatech_dev_76@103.72.96.222:27017/faq_multivit?authSource=admin\nNODE_ENV=production\nNEXT_PUBLIC_API_URL=https://faq.trungthanhdev.com" > .env.production; \
+    fi
+
+# Copy env file
+RUN cp .env.production .env.local || echo "No .env.production file found, using defaults"
+
 # Build application
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
@@ -23,6 +31,7 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=3000
+ENV MONGODB_URI=mongodb://pharmatech:pharmatech_dev_76@103.72.96.222:27017/faq_multivit?authSource=admin
 
 # Create non-root user
 RUN addgroup --system --gid 1001 nodejs && \
@@ -40,6 +49,7 @@ COPY --from=builder /app/postcss.config.js ./
 COPY --from=builder /app/tailwind.config.js ./
 COPY --from=builder /app/app/globals.css ./app/
 COPY --from=builder /app/package*.json ./
+COPY --from=builder /app/.env.local ./.env.local
 
 # Install production dependencies only
 RUN npm install --production
@@ -53,9 +63,9 @@ USER nextjs
 # Expose port
 EXPOSE 3000
 
-# Health check
+# Add MongoDB healthcheck
 HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
-    CMD wget --no-verbose --tries=1 --spider http://localhost:3000/ || exit 1
+    CMD wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1
 
-# Start application
+# Start application with proper environment
 CMD ["npm", "start"] 
