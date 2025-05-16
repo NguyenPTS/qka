@@ -4,6 +4,7 @@ const nextConfig = {
     serverComponentsExternalPackages: ['mongoose']
   },
   output: 'standalone',
+  //
   images: {
     unoptimized: true,
     remotePatterns: [
