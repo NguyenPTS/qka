@@ -1591,7 +1591,7 @@ export default function Home() {
                   <Button 
                     onClick={handleClear} 
                     disabled={loading || !hasSearched} 
-                    className="border border-gray-300 bg-white text-blue-700 hover:bg-gray-100"
+                    className="border border-gray-300 bg-white text-blue hover:bg-gray-100"
                   >
                     Clear
                   </Button>
@@ -2436,9 +2436,9 @@ export default function Home() {
                       <div key={question.id} className="bg-white rounded-lg p-6 shadow-sm">
                         {saleCurrentTab === 'pending' ? (
                           <>
-                        <div className="mb-4">
-                          <h3 className="font-medium text-gray-900">Câu hỏi:</h3>
-                          <p className="mt-1 text-gray-700">{question.text}</p>
+                            <div className="mb-4">
+                              <h3 className="font-medium text-gray-900">Câu hỏi:</h3>
+                              <p className="mt-1 text-gray-700">{question.text}</p>
                               
                               {question.keyword && (
                                 <div className="mt-2">
@@ -2448,85 +2448,120 @@ export default function Home() {
                                   </span>
                                 </div>
                               )}
-                        </div>
-
-                            <div className="mb-4">
-                              <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Từ khóa
-                              </label>
-                              <input
-                                type="text"
-                                value={saleAnswerKeywords[question.id] || question.keyword || ''}
-                                onChange={(e) => handleSaleAnswerKeywordChange(question.id, e.target.value)}
-                                placeholder="Nhập từ khóa mới hoặc giữ nguyên từ khóa cũ..."
-                                className="w-full p-2 border border-gray-300 rounded-md"
-                              />
-                            </div>
-
-                            <div className="mb-4">
-                              <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Câu trả lời
-                              </label>
-                              <textarea
-                                value={saleAnswers[question.id] || ''}
-                                onChange={(e) => handleSaleAnswerChange(question.id, e.target.value)}
-                                placeholder="Nhập câu trả lời..."
-                                className="w-full p-2 border border-gray-300 rounded-md"
-                                rows={3}
-                              />
-                            </div>
-
-                            <div className="mb-4">
-                              <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Hình ảnh đính kèm
-                              </label>
-                              <div className="flex items-center gap-4">
-                                <button
-                                  type="button"
-                                  onClick={() => document.getElementById(`answer-images-${question.id}`)?.click()}
-                                  className="flex items-center gap-2 px-4 py-2 border-2 border-blue-500 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors"
-                                >
-                                  <ImageIcon size={20} />
-                                  Chọn hình ảnh
-                                </button>
-                                <p className="text-sm text-gray-500">Hỗ trợ: JPG, PNG (Tối đa 5MB)</p>
-                                <input
-                                  id={`answer-images-${question.id}`}
-                                  type="file"
-                                  multiple
-                                  accept="image/*"
-                                  onChange={(e) => handleImageSelect(e, question.id)}
-                                  className="hidden"
-                                />
+                              
+                              <div className="mt-2 text-sm text-gray-500">
+                                Thời gian tạo: {new Date(question.createdAt).toLocaleString('vi-VN')}
                               </div>
-
-                              {questionImages[question.id]?.length > 0 && (
-                                <div className="grid grid-cols-3 gap-4 mt-4">
-                                  {questionImages[question.id].map((file, index) => (
-                                    <div key={index} className="relative group rounded-lg overflow-hidden shadow-sm">
-                                      <Image
-                                        src={URL.createObjectURL(file)}
-                                        alt={`Answer image ${index + 1}`}
-                                        width={300}
-                                        height={200}
-                                        className="w-full h-32 object-cover"
-                                      />
-                                      <div className="absolute inset-0 bg-black bg-opacity-40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                        <button
-                                          type="button"
-                                          onClick={() => removeImage(question.id, index)}
-                                          className="p-2 bg-red-600 text-white rounded-full hover:bg-red-700 transition-colors"
-                                        >
-                                          <Trash2 size={16} />
-                                        </button>
-                                      </div>
-                                    </div>
-                                  ))}
-                                </div>
-                              )}
                             </div>
 
                             <div className="flex justify-end gap-2">
+                              <button
+                                onClick={() => deleteSaleQuestion(question.id)}
+                                className="px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                              >
+                                <Trash2 size={16} className="inline mr-2" />
+                                Xóa
+                              </button>
+                              <button
+                                onClick={() => {
+                                  // Mở form trả lời ở đây khi cần
+                                  const element = document.getElementById(`answer-form-${question.id}`);
+                                  if (element) {
+                                    element.classList.toggle('hidden');
+                                  }
+                                }}
+                                className="px-4 py-2 bg-blue-600 text-white rounded-md"
+                              >
+                                Trả lời
+                              </button>
+                            </div>
+                            
+                            <div id={`answer-form-${question.id}`} className="mt-4 pt-4 border-t border-gray-200 hidden">
+                              <div className="mb-4">
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                  Từ khóa
+                                </label>
+                                <input
+                                  type="text"
+                                  value={saleAnswerKeywords[question.id] || question.keyword || ''}
+                                  onChange={(e) => handleSaleAnswerKeywordChange(question.id, e.target.value)}
+                                  placeholder="Nhập từ khóa mới hoặc giữ nguyên từ khóa cũ..."
+                                  className="w-full p-2 border border-gray-300 rounded-md"
+                                />
+                              </div>
+
+                              <div className="mb-4">
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                  Câu trả lời
+                                </label>
+                                <textarea
+                                  value={saleAnswers[question.id] || ''}
+                                  onChange={(e) => handleSaleAnswerChange(question.id, e.target.value)}
+                                  placeholder="Nhập câu trả lời..."
+                                  className="w-full p-2 border border-gray-300 rounded-md"
+                                  rows={3}
+                                />
+                              </div>
+
+                              <div className="mb-4">
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                  Hình ảnh đính kèm
+                                </label>
+                                <div className="flex items-center gap-4">
+                                  <button
+                                    type="button"
+                                    onClick={() => document.getElementById(`answer-images-${question.id}`)?.click()}
+                                    className="flex items-center gap-2 px-4 py-2 border-2 border-blue-500 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors"
+                                  >
+                                    <ImageIcon size={20} />
+                                    Chọn hình ảnh
+                                  </button>
+                                  <p className="text-sm text-gray-500">Hỗ trợ: JPG, PNG (Tối đa 5MB)</p>
+                                  <input
+                                    id={`answer-images-${question.id}`}
+                                    type="file"
+                                    multiple
+                                    accept="image/*"
+                                    onChange={(e) => handleImageSelect(e, question.id)}
+                                    className="hidden"
+                                  />
+                                </div>
+
+                                {questionImages[question.id]?.length > 0 && (
+                                  <div className="grid grid-cols-3 gap-4 mt-4">
+                                    {questionImages[question.id].map((file, index) => (
+                                      <div key={index} className="relative group rounded-lg overflow-hidden shadow-sm">
+                                        <Image
+                                          src={URL.createObjectURL(file)}
+                                          alt={`Answer image ${index + 1}`}
+                                          width={300}
+                                          height={200}
+                                          className="w-full h-32 object-cover"
+                                        />
+                                        <div className="absolute inset-0 bg-black bg-opacity-40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                          <button
+                                            type="button"
+                                            onClick={() => removeImage(question.id, index)}
+                                            className="p-2 bg-red-600 text-white rounded-full hover:bg-red-700 transition-colors"
+                                          >
+                                            <Trash2 size={16} />
+                                          </button>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                              
+                              <div className="flex justify-end">
+                                <button
+                                  onClick={() => answerSaleQuestion(question.id)}
+                                  disabled={!saleAnswers[question.id]?.trim()}
+                                  className="px-4 py-2 bg-blue-600 text-white rounded-md disabled:opacity-50"
+                                >
+                                  Lưu câu trả lời
+                                </button>
+                              </div>
                             </div>
                           </>
                         ) : (
