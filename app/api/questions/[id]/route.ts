@@ -71,9 +71,9 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     }
 
     console.log('Updated question:', {
-      id: updated._id,
-      status: updated.status,
-      answer: updated.answer?.substring(0, 30)
+      id: (updated as any)._id,
+      status: (updated as any).status,
+      answer: (updated as any).answer?.substring(0, 30)
     });
 
     return NextResponse.json(updated, {
