@@ -13,7 +13,9 @@ COPY . .
 
 # Create default env file if not exists
 RUN if [ ! -f .env.production ]; then \
-    echo "MONGODB_URI=mongodb://pharmatech:pharmatech_dev_76@103.72.96.222:27017/faq_multivit?authSource=admin\nNODE_ENV=production\nNEXT_PUBLIC_API_URL=https://faq.trungthanhdev.com" > .env.production; \
+    echo "MONGODB_URI=mongodb://pharmatech:pharmatech_dev_76@103.72.96.222:27017/faq_multivit?authSource=admin" > .env.production && \
+    echo "NODE_ENV=production" >> .env.production && \
+    echo "NEXT_PUBLIC_API_URL=https://faq.trungthanhdev.com" >> .env.production; \
     fi
 
 # Copy env file
