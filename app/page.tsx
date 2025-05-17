@@ -37,6 +37,13 @@ import type { StaticImageData } from 'next/image';
 import { saveSaleQuestionToMongoDB, saveSaleAnswerToMongoDB } from "./utils/questionUtils";
 import { getImageUrl } from './utils/helpers';
 
+// Khai báo kiểu cho CustomEvent
+declare global {
+  interface WindowEventMap {
+    'openImagePopup': CustomEvent<{ src: string }>;
+  }
+}
+
 interface Question {
   _id?: string;
   question: string;
@@ -52,6 +59,7 @@ interface CrudTableProps {
   crudQuestions: Question[];
   handleCrudEdit: (q: Question) => void;
   handleCrudDelete: (id: string) => void;
+  setImagePopup: React.Dispatch<React.SetStateAction<{open: boolean, src: string}>>;
 }
 
 interface SaleQuestion {
@@ -94,7 +102,8 @@ const CrudTable = React.memo(function CrudTable({
   handleCrudEdit, 
   handleCrudDelete,
   handleSortChange,
-  getSortIcon
+  getSortIcon,
+  setImagePopup
 }: CrudTableProps & {
   handleSortChange: (field: string) => void;
   getSortIcon: (field: string) => React.ReactNode;
@@ -184,12 +193,12 @@ const CrudTable = React.memo(function CrudTable({
                     {Array.isArray(q.keyword) ? q.keyword.map((k, idx) => (
                       <span
                         key={idx}
-                        className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+                        className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-[#1cf0a8] text-[#ffffff]"
                       >
                         {k}
                       </span>
                     )) : (
-                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-[#1cf0a8] text-[#ffffff]">
                         {q.keyword}
                       </span>
                     )}
@@ -214,7 +223,14 @@ const CrudTable = React.memo(function CrudTable({
                                   alt={`Answer image ${index + 1}`}
                                   width={300}
                                   height={200}
-                                  className="w-full h-32 object-cover rounded-lg border border-gray-200"
+                                  className="w-full h-32 object-cover rounded-lg border border-gray-200 cursor-pointer"
+                                  onClick={(e) => {
+                                    // Tạo một đối tượng event để định nghĩa hàm truy cập tới setImagePopup trong Home component
+                                    const customEvent = new CustomEvent('openImagePopup', { 
+                                      detail: { src: fullImageUrl } 
+                                    });
+                                    window.dispatchEvent(customEvent);
+                                  }}
                                   onError={(e) => {
                                     console.error(`Error loading image ${index + 1}:`, fullImageUrl);
                                     const target = e.target as HTMLImageElement;
@@ -228,6 +244,11 @@ const CrudTable = React.memo(function CrudTable({
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100"
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      setImagePopup({open: true, src: fullImageUrl});
+                                    }}
                                   >
                                     <span className="p-2 bg-white rounded-full">
                                       <ExternalLink size={16} className="text-gray-900" />
@@ -242,7 +263,7 @@ const CrudTable = React.memo(function CrudTable({
                     )}
                     {q.createdAt && (
                       <p className="text-xs text-gray-500">
-                        Ngày tạo: {new Date(q.createdAt).toLocaleDateString('vi-VN')}
+                        Ngày tạo: {new Date(q.createdAt).toLocaleString('vi-VN')}
                       </p>
                     )}
                   </div>
@@ -327,6 +348,12 @@ export default function Home() {
   const [errorMsg, setErrorMsg] = useState<string>("");
   const [hasSearched, setHasSearched] = useState(false);
   
+  // Add image popup state
+  const [imagePopup, setImagePopup] = useState<{open: boolean, src: string}>({
+    open: false,
+    src: ''
+  });
+  
   // Add management states
   const [crudQuestions, setCrudQuestions] = useState<Question[]>([]);
   const [crudTotal, setCrudTotal] = useState(0);
@@ -368,6 +395,20 @@ export default function Home() {
 
   // Thêm state để lưu trữ keyword khi trả lời
   const [saleAnswerKeywords, setSaleAnswerKeywords] = useState<Record<string, string>>({});
+
+  // Lắng nghe sự kiện mở popup hình ảnh
+  useEffect(() => {
+    const handleOpenImagePopup = (event: any) => {
+      const { src } = event.detail;
+      setImagePopup({open: true, src});
+    };
+    
+    window.addEventListener('openImagePopup', handleOpenImagePopup);
+    
+    return () => {
+      window.removeEventListener('openImagePopup', handleOpenImagePopup);
+    };
+  }, []);
 
   // Add function to load sale questions from database
   const fetchSaleQuestions = useCallback(async () => {
@@ -1559,7 +1600,7 @@ export default function Home() {
 
   return (
     <div className="container mx-auto p-4">
-      <div className="flex justify-center w-full min-h-screen bg-gray-50">
+      <div className="flex justify-center w-full min-h-screen bg-white">
         <div className="w-full max-w-5xl px-4 py-8 bg-white rounded-2xl shadow-lg">
           <h1 className="text-3xl font-bold mb-8">Quản lý câu hỏi</h1>
           
@@ -1588,13 +1629,13 @@ export default function Home() {
                   <Button onClick={handleQuestionSubmit} disabled={loading}>
                     {loading ? "Searching..." : "Find Keywords"}
                   </Button>
-                  <Button 
+                  <button 
                     onClick={handleClear} 
                     disabled={loading || !hasSearched} 
-                    className="border border-gray-300 bg-white text-blue hover:bg-gray-100"
+                    className="px-4 py-2 bg-gray-200 rounded-md"
                   >
                     Clear
-                  </Button>
+                  </button>
                 </div>
                 <p className="mt-2 text-sm text-gray-500">Chỉ hiển thị những câu hỏi đã được trả lời.</p>
               </div>
@@ -1669,7 +1710,7 @@ export default function Home() {
                                   onClick={() => !selectedKeywords.includes(k) && handleKeywordToggle(k)}
                                   className={`px-3 py-1 rounded-full text-sm font-medium ${
                                     selectedKeywords.includes(k)
-                                      ? 'bg-blue-100 text-blue-800 border border-blue-200'
+                                      ? 'bg-[#1cf0a8] text-[#ffffff] border border-blue-200'
                                       : 'bg-gray-100 text-gray-700 border border-gray-200 hover:bg-gray-200'
                                   }`}
                                 >
@@ -1706,7 +1747,14 @@ export default function Home() {
                                         alt={`Answer image ${index + 1}`}
                                         width={300}
                                         height={200}
-                                        className="w-full h-32 object-cover rounded-lg border border-gray-200"
+                                        className="w-full h-32 object-cover rounded-lg border border-gray-200 cursor-pointer"
+                                        onClick={(e) => {
+                                          // Tạo một đối tượng event để định nghĩa hàm truy cập tới setImagePopup trong Home component
+                                          const customEvent = new CustomEvent('openImagePopup', { 
+                                            detail: { src: fullImageUrl } 
+                                          });
+                                          window.dispatchEvent(customEvent);
+                                        }}
                                         onError={(e) => {
                                           console.error(`Error loading image ${index + 1}:`, fullImageUrl);
                                           const target = e.target as HTMLImageElement;
@@ -1720,6 +1768,11 @@ export default function Home() {
                                           target="_blank"
                                           rel="noopener noreferrer"
                                           className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100"
+                                          onClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            setImagePopup({open: true, src: fullImageUrl});
+                                          }}
                                         >
                                           <span className="p-2 bg-white rounded-full">
                                             <ExternalLink size={16} className="text-gray-900" />
@@ -1735,7 +1788,7 @@ export default function Home() {
 
                           {question.createdAt && (
                             <div className="text-sm text-gray-500">
-                              Ngày tạo: {new Date(question.createdAt).toLocaleDateString('vi-VN')}
+                              Ngày tạo: {new Date(question.createdAt).toLocaleString('vi-VN')}
                             </div>
                           )}
                         </div>
@@ -1921,6 +1974,7 @@ export default function Home() {
                                       handleCrudDelete={handleCrudDelete} 
                                       handleSortChange={handleSortChange} 
                                       getSortIcon={getSortIcon} 
+                                      setImagePopup={setImagePopup}
                                     />
                                   </>
                                 )}
@@ -1934,6 +1988,7 @@ export default function Home() {
                                   handleCrudDelete={handleCrudDelete} 
                                   handleSortChange={handleSortChange}
                                   getSortIcon={getSortIcon}
+                                  setImagePopup={setImagePopup}
                                 />
                               </div>
                             )}
@@ -2021,7 +2076,8 @@ export default function Home() {
                                         alt={`Preview ${index + 1}`}
                                         width={300}
                                         height={200}
-                                        className="w-full h-32 object-cover"
+                                        className="w-full h-32 object-cover cursor-pointer"
+                                        onClick={() => setImagePopup({open: true, src: URL.createObjectURL(file)})}
                                       />
                                       <div className="absolute inset-0 bg-black bg-opacity-40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                                         <button
@@ -2169,6 +2225,7 @@ export default function Home() {
                                   handleCrudDelete={handleCrudDelete} 
                                   handleSortChange={handleSortChange}
                                   getSortIcon={getSortIcon}
+                                  setImagePopup={setImagePopup}
                                 />
                               </>
                             )}
@@ -2182,6 +2239,7 @@ export default function Home() {
                               handleCrudDelete={handleCrudDelete} 
                               handleSortChange={handleSortChange}
                               getSortIcon={getSortIcon}
+                              setImagePopup={setImagePopup}
                             />
                           </div>
                         )}
@@ -2280,6 +2338,7 @@ export default function Home() {
                                     handleCrudDelete={handleCrudDelete} 
                                     handleSortChange={handleSortChange}
                                     getSortIcon={getSortIcon}
+                                  setImagePopup={setImagePopup}
                                   />
                                 </>
                             )}
@@ -2299,6 +2358,7 @@ export default function Home() {
                                 handleCrudDelete={handleCrudDelete} 
                                 handleSortChange={handleSortChange}
                                 getSortIcon={getSortIcon}
+                                setImagePopup={setImagePopup}
                               />
                             </div>
                           </div>
@@ -2436,17 +2496,17 @@ export default function Home() {
                       <div key={question.id} className="bg-white rounded-lg p-6 shadow-sm">
                         {saleCurrentTab === 'pending' ? (
                           <>
-                            <div className="mb-4">
-                              <h3 className="font-medium text-gray-900">Câu hỏi:</h3>
-                              <p className="mt-1 text-gray-700">{question.text}</p>
+                        <div className="mb-4">
+                          <h3 className="font-medium text-gray-900">Câu hỏi:</h3>
+                          <p className="mt-1 text-gray-700">{question.text}</p>
                               
                               {question.keyword && (
                                 <div className="mt-2">
                                   <h3 className="text-sm font-medium text-gray-700">Từ khóa:</h3>
-                                  <span className="inline-flex items-center px-2 py-1 mt-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                  <span className="inline-flex items-center px-2 py-1 mt-1 rounded-full text-xs font-medium bg-[#1cf0a8] text-[#ffffff]">
                                     {question.keyword}
                                   </span>
-                                </div>
+                        </div>
                               )}
                               
                               <div className="mt-2 text-sm text-gray-500">
@@ -2490,77 +2550,78 @@ export default function Home() {
                                 />
                               </div>
 
-                              <div className="mb-4">
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                  Câu trả lời
-                                </label>
-                                <textarea
-                                  value={saleAnswers[question.id] || ''}
-                                  onChange={(e) => handleSaleAnswerChange(question.id, e.target.value)}
-                                  placeholder="Nhập câu trả lời..."
-                                  className="w-full p-2 border border-gray-300 rounded-md"
-                                  rows={3}
+                            <div className="mb-4">
+                              <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Câu trả lời
+                              </label>
+                              <textarea
+                                value={saleAnswers[question.id] || ''}
+                                onChange={(e) => handleSaleAnswerChange(question.id, e.target.value)}
+                                placeholder="Nhập câu trả lời..."
+                                className="w-full p-2 border border-gray-300 rounded-md"
+                                rows={3}
+                              />
+                            </div>
+
+                            <div className="mb-4">
+                              <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Hình ảnh đính kèm
+                              </label>
+                              <div className="flex items-center gap-4">
+                                <button
+                                  type="button"
+                                  onClick={() => document.getElementById(`answer-images-${question.id}`)?.click()}
+                                  className="flex items-center gap-2 px-4 py-2 border-2 border-blue-500 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors"
+                                >
+                                  <ImageIcon size={20} />
+                                  Chọn hình ảnh
+                                </button>
+                                  <p className="text-sm text-gray-500">Hỗ trợ: JPG, PNG (Tối đa 5MB)</p>
+                                <input
+                                  id={`answer-images-${question.id}`}
+                                  type="file"
+                                  multiple
+                                  accept="image/*"
+                                  onChange={(e) => handleImageSelect(e, question.id)}
+                                  className="hidden"
                                 />
                               </div>
 
-                              <div className="mb-4">
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                  Hình ảnh đính kèm
-                                </label>
-                                <div className="flex items-center gap-4">
-                                  <button
-                                    type="button"
-                                    onClick={() => document.getElementById(`answer-images-${question.id}`)?.click()}
-                                    className="flex items-center gap-2 px-4 py-2 border-2 border-blue-500 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors"
-                                  >
-                                    <ImageIcon size={20} />
-                                    Chọn hình ảnh
-                                  </button>
-                                  <p className="text-sm text-gray-500">Hỗ trợ: JPG, PNG (Tối đa 5MB)</p>
-                                  <input
-                                    id={`answer-images-${question.id}`}
-                                    type="file"
-                                    multiple
-                                    accept="image/*"
-                                    onChange={(e) => handleImageSelect(e, question.id)}
-                                    className="hidden"
-                                  />
-                                </div>
-
-                                {questionImages[question.id]?.length > 0 && (
-                                  <div className="grid grid-cols-3 gap-4 mt-4">
-                                    {questionImages[question.id].map((file, index) => (
-                                      <div key={index} className="relative group rounded-lg overflow-hidden shadow-sm">
-                                        <Image
-                                          src={URL.createObjectURL(file)}
-                                          alt={`Answer image ${index + 1}`}
-                                          width={300}
-                                          height={200}
-                                          className="w-full h-32 object-cover"
-                                        />
-                                        <div className="absolute inset-0 bg-black bg-opacity-40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                          <button
-                                            type="button"
-                                            onClick={() => removeImage(question.id, index)}
-                                            className="p-2 bg-red-600 text-white rounded-full hover:bg-red-700 transition-colors"
-                                          >
-                                            <Trash2 size={16} />
-                                          </button>
-                                        </div>
+                              {questionImages[question.id]?.length > 0 && (
+                                <div className="grid grid-cols-3 gap-4 mt-4">
+                                  {questionImages[question.id].map((file, index) => (
+                                    <div key={index} className="relative group rounded-lg overflow-hidden shadow-sm">
+                                      <Image
+                                        src={URL.createObjectURL(file)}
+                                        alt={`Answer image ${index + 1}`}
+                                        width={300}
+                                        height={200}
+                                        className="w-full h-32 object-cover cursor-pointer"
+                                        onClick={() => setImagePopup({open: true, src: URL.createObjectURL(file)})}
+                                      />
+                                      <div className="absolute inset-0 bg-black bg-opacity-40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                        <button
+                                          type="button"
+                                          onClick={() => removeImage(question.id, index)}
+                                          className="p-2 bg-red-600 text-white rounded-full hover:bg-red-700 transition-colors"
+                                        >
+                                          <Trash2 size={16} />
+                                        </button>
                                       </div>
-                                    ))}
-                                  </div>
-                                )}
-                              </div>
-                              
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+
                               <div className="flex justify-end">
-                                <button
-                                  onClick={() => answerSaleQuestion(question.id)}
-                                  disabled={!saleAnswers[question.id]?.trim()}
-                                  className="px-4 py-2 bg-blue-600 text-white rounded-md disabled:opacity-50"
-                                >
+                              <button
+                                onClick={() => answerSaleQuestion(question.id)}
+                                disabled={!saleAnswers[question.id]?.trim()}
+                                className="px-4 py-2 bg-blue-600 text-white rounded-md disabled:opacity-50"
+                              >
                                   Lưu câu trả lời
-                                </button>
+                              </button>
                               </div>
                             </div>
                           </>
@@ -2573,7 +2634,7 @@ export default function Home() {
                               {question.keyword && (
                                 <div className="mt-2">
                                   <h3 className="text-sm font-medium text-gray-700">Từ khóa:</h3>
-                                  <span className="inline-flex items-center px-2 py-1 mt-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                  <span className="inline-flex items-center px-2 py-1 mt-1 rounded-full text-xs font-medium bg-[#1cf0a8] text-[#ffffff]">
                                     {question.keyword}
                                   </span>
                                 </div>
@@ -2601,7 +2662,14 @@ export default function Home() {
                                           alt={`Answer image ${index + 1}`}
                                           width={300}
                                           height={200}
-                                          className="w-full h-32 object-cover rounded-lg border border-gray-200"
+                                          className="w-full h-32 object-cover rounded-lg border border-gray-200 cursor-pointer"
+                                          onClick={(e) => {
+                                            // Tạo một đối tượng event để định nghĩa hàm truy cập tới setImagePopup trong Home component
+                                            const customEvent = new CustomEvent('openImagePopup', { 
+                                              detail: { src: fullImageUrl } 
+                                            });
+                                            window.dispatchEvent(customEvent);
+                                          }}
                                           onError={(e) => {
                                             console.error(`Error loading image ${index + 1}:`, fullImageUrl);
                                             const target = e.target as HTMLImageElement;
@@ -2615,6 +2683,11 @@ export default function Home() {
                                             target="_blank"
                                             rel="noopener noreferrer"
                                             className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100"
+                                            onClick={(e) => {
+                                              e.preventDefault();
+                                              e.stopPropagation();
+                                              setImagePopup({open: true, src: fullImageUrl});
+                                            }}
                                           >
                                             <span className="p-2 bg-white rounded-full">
                                               <ExternalLink size={16} className="text-gray-900" />
@@ -2735,7 +2808,8 @@ export default function Home() {
                           alt={`Preview ${index + 1}`}
                           width={300}
                           height={200}
-                          className="w-full h-32 object-cover"
+                          className="w-full h-32 object-cover cursor-pointer"
+                          onClick={() => setImagePopup({open: true, src: url})}
                         />
                         <div className="absolute inset-0 bg-black bg-opacity-40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                           <button
@@ -2800,6 +2874,40 @@ export default function Home() {
       {errorMsg && (
         <div className="fixed bottom-4 right-4 bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg">
           {errorMsg}
+        </div>
+      )}
+
+      {/* Image Popup */}
+      {imagePopup.open && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-4"
+          onClick={() => setImagePopup({open: false, src: ''})}
+        >
+          <div className="relative max-w-4xl max-h-[90vh] overflow-auto">
+            <button 
+              className="absolute top-2 right-2 bg-white rounded-full p-2 text-black"
+              onClick={(e) => {
+                e.stopPropagation();
+                setImagePopup({open: false, src: ''});
+              }}
+            >
+              <X size={24} />
+            </button>
+            <Image 
+              src={imagePopup.src} 
+              alt="Enlarged view" 
+              width={1200} 
+              height={900}
+              className="max-h-[85vh] w-auto object-contain"
+              onClick={(e) => e.stopPropagation()}
+              onError={(e) => {
+                console.error(`Error loading popup image:`, imagePopup.src);
+                const target = e.target as HTMLImageElement;
+                target.onerror = null;
+                target.style.display = 'none';
+              }}
+            />
+          </div>
         </div>
       )}
 
