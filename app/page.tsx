@@ -266,6 +266,7 @@ const CrudTable = React.memo(function CrudTable({
                         Ngày tạo: {new Date(q.createdAt).toLocaleString('vi-VN')}
                       </p>
                     )}
+                    
                   </div>
                 </div>
                 <div className="col-span-2 flex justify-end gap-2">
