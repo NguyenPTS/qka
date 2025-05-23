@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
   const doc = await Disease.create(body);
   console.log("[Disease API][POST] Đã thêm:", doc?._id);
   return NextResponse.json({ success: true, data: doc });
-}
+} //
 
 export async function PUT(req: NextRequest) {
   const conn = await connectDB();
