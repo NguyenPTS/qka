@@ -44,7 +44,7 @@ export async function PUT(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   const conn = await connectDB();
   console.log("[Disease API][DELETE] Đã kết nối DB:", conn?.connection?.name || conn?.connections?.[0]?.name);
-  logDBInfo('DELETE');
+  logDBInfo('DELETE');///
   const { searchParams } = new URL(req.url);
   const id = searchParams.get("id");
   if (!id) return NextResponse.json({ success: false, error: "Thiếu id" }, { status: 400 });
