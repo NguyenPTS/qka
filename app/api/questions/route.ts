@@ -3,7 +3,7 @@ import connectDB from '../../../lib/mongodb';
 import Question from '../../../models/Question';
 import { ObjectId } from "mongodb";
 import mongoose from 'mongoose';
-import { SaleQuestion } from '../../../types/sale-question';
+
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;

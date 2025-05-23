@@ -14,7 +14,7 @@ import {
   Textarea,
   Button,
   Input
-} from "../components/ui";
+} from "./components/ui";
 import {
   ImageIcon,
   PlusCircle,
@@ -36,6 +36,7 @@ import Image from 'next/image';
 import type { StaticImageData } from 'next/image';
 import { saveSaleQuestionToMongoDB, saveSaleAnswerToMongoDB } from "./utils/questionUtils";
 import { getImageUrl } from './utils/helpers';
+import DiseaseTab from "./components/DiseaseTab";
 
 // Khai báo kiểu cho CustomEvent
 declare global {
@@ -1610,6 +1611,7 @@ export default function Home() {
               <TabsTrigger value="0">Tìm kiếm câu hỏi</TabsTrigger>
               <TabsTrigger value="1">Quản lý câu hỏi</TabsTrigger>
               <TabsTrigger value="2">Thêm câu hỏi bởi sale</TabsTrigger>
+              <TabsTrigger value="3">Bệnh lý</TabsTrigger>
             </TabsList>
 
             <TabsContent value="0">
@@ -2711,6 +2713,10 @@ export default function Home() {
                   </div>
                 )}
               </div>
+            </TabsContent>
+
+            <TabsContent value="3">
+              <DiseaseTab />
             </TabsContent>
           </ShadcnTabs>
           
