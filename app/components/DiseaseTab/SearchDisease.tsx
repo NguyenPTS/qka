@@ -10,7 +10,7 @@ export type DiseaseSearchFilter = {
 
 type Props = {
   value: DiseaseSearchFilter;
-  onChange: (filter: DiseaseSearchFilter) => void;
+  onChange: (filter: DiseaseSearchFilter) => void;///
 };
 
 export default function SearchDisease({ value, onChange }: Props) {
