@@ -1,12 +1,11 @@
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 import { NextResponse } from 'next/server';
 import connectDB from '../../../lib/mongodb';
 import Question from '../../../models/Question';
 import { ObjectId } from "mongodb";
 import mongoose from 'mongoose';
-
-
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
 
 interface WPQuestion {
   _id?: string;

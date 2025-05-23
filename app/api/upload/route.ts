@@ -10,6 +10,8 @@ interface WordPressMediaResponse {
   source_url: string;
 }
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: Request) {
   try {
     const formData = await request.formData();

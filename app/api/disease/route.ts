@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import connectDB from "../../../lib/mongodb";
 import Disease from "../../../models/Disease";
 
-export const dynamic = "force-dynamic";
+export const dynamic = 'force-dynamic';
 
 function logDBInfo(action: string) {
   const dbName = Disease.db?.name || 'unknown';
