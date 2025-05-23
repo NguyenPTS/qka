@@ -15,4 +15,4 @@ const DiseaseSchema = new Schema({
   updatedAt: { type: Date, default: Date.now },
 });
 
-export default mongoose.models.Disease || mongoose.model("Disease", DiseaseSchema, "disease");
+export default mongoose.models.Disease || mongoose.model("Disease", DiseaseSchema, "disease");//
