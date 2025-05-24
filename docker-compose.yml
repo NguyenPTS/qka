@@ -39,7 +39,7 @@ services:
       - 'traefik.enable=true'
       - 'traefik.docker.network=traefik'
       - 'traefik.http.routers.faq.entrypoints=http'
-      - 'traefik.http.routers.faq.rule=Host(`faq.trungthanhdev.com`)'
+      - 'traefik.http.routers.faq.rule=Host(`pharmatech.vn`)'
       - 'traefik.http.routers.faq-secure.entrypoints=https'
       - 'traefik.http.routers.faq-secure.rule=Host(`pharmatech.vn`)'
       - 'traefik.http.routers.faq-secure.tls.certresolver=letsencrypt'
