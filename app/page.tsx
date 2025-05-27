@@ -1856,7 +1856,7 @@ export default function Home() {
               {tab === "1" && !isLocked && (
                 <>
                   <div className="flex justify-end mb-4 gap-2">
-                    <DownloadQuestion questions={crudQuestions.filter(q => q.status === 'done' || q.status === 'answered')} />
+                    <DownloadQuestion />
                     <button
                       onClick={() => setIsLocked(true)}
                       className="px-4 py-2 bg-red-600 text-white rounded-md"
