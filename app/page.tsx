@@ -37,6 +37,7 @@ import type { StaticImageData } from 'next/image';
 import { saveSaleQuestionToMongoDB, saveSaleAnswerToMongoDB } from "./utils/questionUtils";
 import { getImageUrl } from './utils/helpers';
 import DiseaseTab from "./components/DiseaseTab";
+import DownloadQuestion from "./components/ManageQuestionTab/downloadQuestion";
 
 // Khai báo kiểu cho CustomEvent
 declare global {
@@ -1854,33 +1855,8 @@ export default function Home() {
               
               {tab === "1" && !isLocked && (
                 <>
-                  <div className="flex justify-end mb-4">
-                    {/* <button
-                      onClick={async () => {
-                        if (window.confirm('Quá trình này sẽ cập nhật trường status cho các câu hỏi cũ. Tiếp tục?')) {
-                          try {
-                            setLoading(true);
-                            const response = await fetch('/api/questions/fix-status');
-                            const data = await response.json();
-                            if (data.success) {
-                              setSuccessMsg(`Đã cập nhật ${data.totalFixed} câu hỏi thiếu trường status`);
-                              // Tải lại danh sách câu hỏi
-                              await fetchCrudQuestions(crudPage, sortBy, sortOrder);
-                            } else {
-                              setErrorMsg(data.error || 'Có lỗi xảy ra khi cập nhật trường status');
-                            }
-                          } catch (error) {
-                            console.error('Error fixing status:', error);
-                            setErrorMsg('Có lỗi xảy ra khi cập nhật trường status');
-                          } finally {
-                            setLoading(false);
-                          }
-                        }
-                      }}
-                      className="px-4 py-2 mr-2 bg-blue-600 text-white rounded-md"
-                    >
-                      Sửa trường Status
-                    </button> */}
+                  <div className="flex justify-end mb-4 gap-2">
+                    <DownloadQuestion questions={crudQuestions.filter(q => q.status === 'done' || q.status === 'answered')} />
                     <button
                       onClick={() => setIsLocked(true)}
                       className="px-4 py-2 bg-red-600 text-white rounded-md"
